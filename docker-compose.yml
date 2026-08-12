@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16
+    container_name: tennis_data_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tennis
+      POSTGRES_PASSWORD: tennis_dev_password
+      POSTGRES_DB: tennis_data
+    ports:
+      - "55432:5432"   # port non standard pour ne pas entrer en conflit avec une instance locale existante
+    volumes:
+      - tennis_pg_data:/var/lib/postgresql/data
+
+volumes:
+  tennis_pg_data:
