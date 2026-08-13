@@ -146,7 +146,8 @@ def _process_batch(session: Session, fixtures: list[dict], cache: BulkCache, tou
             winner_id = player2_id
 
         status, status_raw = normalize_status(fx.get("event_status"))
-        round_code, round_raw = normalize_round(fx.get("tournament_round"))
+        is_qualification = str(fx.get("event_qualification", "")).strip().lower() == "true"
+        round_code, round_raw = normalize_round(fx.get("tournament_round"), is_qualification)
 
         scheduled_at = None
         if fx.get("event_date"):
@@ -156,8 +157,6 @@ def _process_batch(session: Session, fixtures: list[dict], cache: BulkCache, tou
                 )
             except ValueError:
                 scheduled_at = None
-
-        is_qualification = str(fx.get("event_qualification", "")).strip().lower() == "true"
 
         match = Match(
             tournament_id=tournament_id,

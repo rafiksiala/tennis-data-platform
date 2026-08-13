@@ -37,30 +37,39 @@ def normalize_status(event_status: str | None) -> tuple[str, str | None]:
 
 
 # Mots-cles observes dans tournament_round (ex: "ATP Wimbledon - 1/8-finals").
-# Verifie par test uniquement sur un echantillon limite (2026-08-08) - a enrichir
-# au fil des vraies donnees rencontrees plutot que suppose exhaustif des le depart.
+# ATTENTION A L'ORDRE: "1/8-finals", "quarterfinals" et "semifinals" contiennent tous
+# la sous-chaine "final" -> "final" doit etre verifie EN DERNIER, sinon un match de
+# 1/8 de finale est incorrectement classe comme une Finale (bug reel trouve par test
+# le 2026-08-12, corrige avec un script de reparation des donnees deja en base).
 ROUND_KEYWORDS = [
-    ("final", "F"),           # doit etre teste avant "semi"/"quarter" car "the final" contient "final"
-    ("semi", "SF"),
-    ("quarter", "QF"),
-    ("1/8", "R16"),
-    ("1/16", "R32"),
-    ("1/32", "R64"),
-    ("1/64", "R128"),
     ("round robin", "RR"),
+    ("1/64", "R128"),
+    ("1/32", "R64"),
+    ("1/16", "R32"),
+    ("1/8", "R16"),
+    ("quarter", "QF"),
+    ("semi", "SF"),
+    ("final", "F"),
 ]
 
 
-def normalize_round(tournament_round: str | None) -> tuple[str | None, str | None]:
+def normalize_round(tournament_round: str | None, is_qualification: bool = False) -> tuple[str | None, str | None]:
     """Retourne (round_code, round_raw). round_code est None si aucun mot-cle connu
-    n'est trouve - mieux vaut NULL qu'une valeur fausse."""
+    n'est trouve - mieux vaut NULL qu'une valeur fausse.
+
+    is_qualification prefixe le code avec "Q-": le fournisseur utilise le MEME libelle
+    "Final" pour la vraie finale du tournoi ET pour le dernier tour des qualifications
+    (bug reel trouve par test le 2026-08-13: des centaines de matchs de qualifs du 1er
+    tour du tableau, joues 2 semaines avant la vraie finale, etaient comptes comme "F").
+    Sans le prefixe, "Q-F" (dernier tour de qualifs) serait indiscernable de "F" (vraie
+    finale) alors que ce sont des contextes tres differents pour l'analyse."""
     raw = tournament_round
     if not raw:
         return None, raw
     lowered = raw.lower()
     for keyword, code in ROUND_KEYWORDS:
         if keyword in lowered:
-            return code, raw
+            return (f"Q-{code}" if is_qualification else code), raw
     return None, raw
 
 

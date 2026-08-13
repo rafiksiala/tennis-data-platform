@@ -128,7 +128,8 @@ def upsert_match_from_fixture(
         winner = player2
 
     status, status_raw = normalize_status(fixture.get("event_status"))
-    round_code, round_raw = normalize_round(fixture.get("tournament_round"))
+    is_qualification = str(fixture.get("event_qualification", "")).strip().lower() == "true"
+    round_code, round_raw = normalize_round(fixture.get("tournament_round"), is_qualification)
 
     scheduled_at = None
     if fixture.get("event_date"):
@@ -137,8 +138,6 @@ def upsert_match_from_fixture(
             scheduled_at = datetime.strptime(f"{fixture['event_date']} {time_part}", "%Y-%m-%d %H:%M")
         except ValueError:
             scheduled_at = None
-
-    is_qualification = str(fixture.get("event_qualification", "")).strip().lower() == "true"
 
     link = (
         session.query(MatchExternalId)
