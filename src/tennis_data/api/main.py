@@ -21,10 +21,16 @@ from tennis_data.models import Match, MatchStatistic, OddsSnapshot, Player, Rank
 
 app = FastAPI(title="Tennis Data API", version="0.1.0")
 
-# CORS ouvert en dev - a restreindre a l'origine du frontend une fois deployee
+# Restreint au frontend deploye + dev local (voir TODO.md pour le raisonnement:
+# CORS ne protege pas des donnees sensibles ici, ca evite juste que d'autres sites
+# consomment gratuitement l'API depuis le navigateur d'un visiteur).
+ALLOWED_ORIGINS = [
+    "https://tennis-data-platform-gby1.onrender.com",
+    "http://localhost:5173",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["GET"],
     allow_headers=["*"],
 )
