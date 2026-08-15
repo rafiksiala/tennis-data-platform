@@ -18,8 +18,8 @@ rattaché.
   `/players/{id}/form`, `/players/{id}/rankings`, `/players/{id}/h2h/{other_id}`).
 - Frontend calendrier/résultats déployé : https://tennis-data-platform-gby1.onrender.com
   (React + Vite + Tailwind, dossier `frontend/`) : liste filtrable + page détail
-  (sets, stats, cotes) + pages joueurs (bio, classement, indicateurs de forme,
-  historique, recherche), tout en anglais.
+  (sets, stats, cotes, **comparaison de forme des 2 joueurs**) + pages joueurs (bio,
+  classement, indicateurs de forme, historique, recherche), tout en anglais.
 - Enrichissement bio joueurs terminé (`scripts/enrich_players.py`) : 4 383 joueurs
   actifs (ATP/WTA/Challenger, 24 derniers mois) ont pays + date de naissance
   (`hand` reste toujours `null`, jamais fourni par le fournisseur).
