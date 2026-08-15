@@ -109,3 +109,37 @@ class H2HOut(BaseModel):
     player1_wins: int
     player2_wins: int
     matches: list[MatchOut]
+
+
+class SurfaceFormOut(BaseModel):
+    surface: str
+    matches: int
+    wins: int
+    win_rate: float | None = None
+
+
+class PlayerFormOut(BaseModel):
+    player_id: int
+    as_of: datetime
+    matches_considered: int
+
+    matches_last_10: int
+    win_rate_last_10: float | None = None
+    matches_last_20: int
+    win_rate_last_20: float | None = None
+    matches_last_30: int
+    win_rate_last_30: float | None = None
+
+    matches_3m: int
+    win_rate_3m: float | None = None
+    matches_6m: int
+    win_rate_6m: float | None = None
+    matches_12m: int
+    win_rate_12m: float | None = None
+
+    by_surface: list[SurfaceFormOut]
+
+    streak_type: str | None = None  # 'W' | 'L' | None
+    streak_count: int
+    days_since_last_match: int | None = None
+    matches_last_30_days: int

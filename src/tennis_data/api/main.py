@@ -15,14 +15,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
+from tennis_data.analytics.form import compute_player_form
 from tennis_data.api.deps import get_db
 from tennis_data.api.schemas import (
     H2HOut,
     MatchDetailOut,
     MatchListOut,
     PlayerDetailOut,
+    PlayerFormOut,
     PlayerOut,
     RankingSnapshotOut,
+    SurfaceFormOut,
     TournamentOut,
 )
 from tennis_data.models import Match, MatchStatistic, OddsSnapshot, Player, RankingSnapshot, Tournament
@@ -209,6 +212,49 @@ def get_player(player_id: int, db: Session = Depends(get_db)):
     if not player:
         raise HTTPException(status_code=404, detail="Joueur introuvable")
     return player
+
+
+@app.get("/players/{player_id}/form", response_model=PlayerFormOut)
+def player_form(
+    player_id: int,
+    db: Session = Depends(get_db),
+    as_of: datetime | None = Query(
+        None, description="Ne regarde que les matchs termines avant cette date (par defaut: maintenant)"
+    ),
+):
+    """Indicateurs de forme (win rate 10/20/30 derniers matchs, par fenetre de temps,
+    par surface, serie en cours, repos). Voir tennis_data/analytics/form.py: le parametre
+    as_of est deja pense pour le backtesting a venir, pas seulement l'usage "live"."""
+    player = db.query(Player).filter(Player.id == player_id).one_or_none()
+    if not player:
+        raise HTTPException(status_code=404, detail="Joueur introuvable")
+
+    form = compute_player_form(db, player_id, as_of)
+    return PlayerFormOut(
+        player_id=form.player_id,
+        as_of=form.as_of,
+        matches_considered=form.matches_considered,
+        matches_last_10=form.last_n[10][1],
+        win_rate_last_10=form.win_rate_last_n(10),
+        matches_last_20=form.last_n[20][1],
+        win_rate_last_20=form.win_rate_last_n(20),
+        matches_last_30=form.last_n[30][1],
+        win_rate_last_30=form.win_rate_last_n(30),
+        matches_3m=form.window_months[3][1],
+        win_rate_3m=form.win_rate_window(3),
+        matches_6m=form.window_months[6][1],
+        win_rate_6m=form.win_rate_window(6),
+        matches_12m=form.window_months[12][1],
+        win_rate_12m=form.win_rate_window(12),
+        by_surface=[
+            SurfaceFormOut(surface=s.surface, matches=s.matches, wins=s.wins, win_rate=s.win_rate)
+            for s in form.by_surface.values()
+        ],
+        streak_type=form.streak_type,
+        streak_count=form.streak_count,
+        days_since_last_match=form.days_since_last_match,
+        matches_last_30_days=form.matches_last_30_days,
+    )
 
 
 @app.get("/players/{player_id}/rankings", response_model=list[RankingSnapshotOut])
