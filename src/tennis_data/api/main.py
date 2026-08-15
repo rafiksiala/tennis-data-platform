@@ -51,11 +51,13 @@ def list_matches(
     limit: int = Query(50, le=200),
     offset: int = Query(0, ge=0),
 ):
-    query = db.query(Match).options(
-        joinedload(Match.tournament),
-        joinedload(Match.player1),
-        joinedload(Match.player2),
-    )
+    # Pas de joinedload ici: .count() n'a pas besoin des jointures (chaque match a
+    # exactement un tournoi/player1/player2, donc ca ne change pas le compte), mais
+    # SQLAlchemy les inclut quand meme dans la requete de comptage si on les a ajoutees
+    # via .options() sur cette meme query -> ~7x plus lent sur 100k+ matchs, au point de
+    # timeout sur le plan gratuit Render (trouve par test le 2026-08-13). Le joinedload
+    # n'est ajoute que plus bas, juste avant le .all() final qui en a vraiment besoin.
+    query = db.query(Match)
 
     if date_filter:
         query = query.filter(
@@ -87,14 +89,20 @@ def list_matches(
             Player.full_name.ilike(f"%{q}%")
         )
 
+    # .distinct() n'est necessaire QUE pour la recherche par nom (q): c'est le seul
+    # filtre qui fait un join pouvant dupliquer une ligne Match (si player1 ET player2
+    # correspondent tous les deux). Sans q, l'appliquer quand meme forcait Postgres a
+    # trier/dedupliquer toute la table avant de limiter -> timeout sur 100k+ matchs
+    # (trouve par test le 2026-08-13 sur le deploiement Render).
     total = query.distinct(Match.id).count() if q else query.count()
-    matches = (
-        query.order_by(Match.scheduled_at.desc().nullslast())
-        .distinct()
-        .offset(offset)
-        .limit(limit)
-        .all()
-    )
+    query = query.options(
+        joinedload(Match.tournament),
+        joinedload(Match.player1),
+        joinedload(Match.player2),
+    ).order_by(Match.scheduled_at.desc().nullslast())
+    if q:
+        query = query.distinct()
+    matches = query.offset(offset).limit(limit).all()
 
     return MatchListOut(total=total, limit=limit, offset=offset, results=matches)
 
