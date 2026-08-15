@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom'
 import { usePlayer, usePlayerRankings, useMatches } from '../api/hooks'
 import { countryFlag } from '../lib/countries'
 import { MatchRow } from '../components/MatchRow'
+import type { RankingSnapshotOut } from '../api/types'
 
 function age(birthDate: string | null): number | null {
   if (!birthDate) return null
@@ -21,7 +22,7 @@ export function PlayerPage() {
   if (isError || !player)
     return <div className="max-w-2xl mx-auto px-4 py-6 text-red-600 text-sm">Player not found.</div>
 
-  const latestByTour = new Map<string, (typeof rankings)[number]>()
+  const latestByTour = new Map<string, RankingSnapshotOut>()
   for (const r of rankings ?? []) {
     if (!latestByTour.has(r.tour)) latestByTour.set(r.tour, r)
   }
@@ -53,8 +54,8 @@ export function PlayerPage() {
             {[...latestByTour.entries()].map(([tour, r]) => (
               <div key={tour} className="text-sm">
                 <span className="text-xs uppercase text-slate-400">{tour}</span>{' '}
-                <span className="font-semibold text-slate-900">#{r!.rank}</span>
-                <span className="text-slate-400"> ({r!.points} pts)</span>
+                <span className="font-semibold text-slate-900">#{r.rank}</span>
+                <span className="text-slate-400"> ({r.points} pts)</span>
               </div>
             ))}
           </div>
