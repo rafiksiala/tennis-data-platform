@@ -4,7 +4,7 @@ Tenu à jour au fil du travail. Sert de mémoire entre les sessions — avant de
 qu'une étape est "terminée", vérifier ici qu'il ne reste rien en attente qui y est
 rattaché.
 
-## État actuel (2026-08-13)
+## État actuel (2026-08-15)
 
 - Base historique: 108 632+ matchs (ATP/WTA/Challenger H+F, 2021-2026), 4,8M
   statistiques, 7 150+ joueurs, ~1 974 tournois.
@@ -15,14 +15,18 @@ rattaché.
   `upcoming-odds` (7h UTC), `rankings` (lundi 8h UTC) — confirmé fonctionnel.
 - API de lecture déployée : `https://tennis-data-platform.onrender.com`
   (`/matches`, `/matches/{id}`, `/tournaments`, `/players`, `/players/{id}`,
-  `/players/{id}/rankings`, `/players/{id}/h2h/{other_id}`).
+  `/players/{id}/form`, `/players/{id}/rankings`, `/players/{id}/h2h/{other_id}`).
 - Frontend calendrier/résultats déployé : https://tennis-data-platform-gby1.onrender.com
   (React + Vite + Tailwind, dossier `frontend/`) : liste filtrable + page détail
-  (sets, stats, cotes) + pages joueurs (bio, classement, historique, recherche),
-  tout en anglais.
+  (sets, stats, cotes) + pages joueurs (bio, classement, indicateurs de forme,
+  historique, recherche), tout en anglais.
 - Enrichissement bio joueurs terminé (`scripts/enrich_players.py`) : 4 383 joueurs
   actifs (ATP/WTA/Challenger, 24 derniers mois) ont pays + date de naissance
   (`hand` reste toujours `null`, jamais fourni par le fournisseur).
+- Premiers indicateurs analytics (`tennis_data/analytics/form.py`) : win rate
+  10/20/30 derniers matchs, fenêtres 3/6/12 mois, par surface, série en cours,
+  jours de repos. Paramètre `as_of` dès le départ pour être réutilisable au
+  backtesting (étape 14) sans réécriture.
 - Repo: https://github.com/rafiksiala/tennis-data-platform
 
 ## À faire — bloquant ou à surveiller
@@ -73,6 +77,11 @@ rattaché.
   (la finale la plus tardive d'un tournoi = la vraie) + auto-réparation continue dans
   `daily_sync` (voir `tennis_data/ingest/maintenance.py`). Ce qui ressemblait à des
   "doublons de tournois" (ex: "Wimbledon" vs "ATP Wimbledon") était en fait ça.
+- **Fausses "surfaces" de phases Coupe Davis** (2026-08-15) : `tournament_sourface`
+  contient parfois un libellé de round ("- Play Offs", "- Preliminary", etc.) au lieu
+  d'une vraie surface, découvert en construisant le win rate par surface. Filtre
+  positif ajouté à l'ingestion + casse normalisée + nettoyage des données déjà en
+  base (voir `tennis_data/ingest/enrich.py`).
 
 ## Connu et volontairement laissé de côté
 
@@ -85,9 +94,11 @@ rattaché.
 
 ## Prochaine étape
 
-Calendrier + pages joueurs déployés et validés (voir ci-dessus). Suite possible :
-démarrage des premiers indicateurs analytics (étape 12 du plan initial), ou pages
-tournois, selon la priorité du moment.
+Calendrier + pages joueurs + premiers indicateurs de forme déployés et validés (voir
+ci-dessus). Suite possible : enrichir les indicateurs (qualité des adversaires -
+nécessite plus d'historique de classement précis, voir limitation ci-dessus -,
+tendance/momentum, contexte tournoi/round), ou démarrer la détection de signaux
+(étape 13 du plan initial), selon la priorité du moment.
 
 ## Repères opérationnels
 
