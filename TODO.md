@@ -16,7 +16,7 @@ rattaché.
 - API de lecture déployée : `https://tennis-data-platform.onrender.com`
   (`/matches`, `/matches/{id}`, `/tournaments`, `/players/{id}/rankings`,
   `/players/{id}/h2h/{other_id}`).
-- Frontend calendrier/résultats déployé : https://tennis-data-platform-1.onrender.com
+- Frontend calendrier/résultats déployé : https://tennis-data-platform-gby1.onrender.com
   (React + Vite + Tailwind, dossier `frontend/`) : liste filtrable + page détail
   (sets, stats, cotes), tout en anglais.
 - Repo: https://github.com/rafiksiala/tennis-data-platform
@@ -26,9 +26,9 @@ rattaché.
 - [ ] **Finir le backfill des cotes** : la dernière passe de nettoyage s'est arrêtée sur
       un quota épuisé à 100/1291 matchs restants. À vérifier/relancer
       (`scripts/backfill_odds.py`).
-- [ ] **CORS** : actuellement ouvert à tout le monde (`allow_origins=["*"]` dans
-      `api/main.py`). Le frontend est déployé (https://tennis-data-platform-1.onrender.com)
-      — restreindre CORS à cette seule origine.
+- [x] **CORS restreint** (2026-08-13) : `allow_origins` limité au frontend déployé
+      (https://tennis-data-platform-gby1.onrender.com) + dev local. Testé: notre origine
+      passe, une origine tierce est bloquée.
 - [ ] **Nom de tournoi bizarre observé** : "Brownsburg (Usa) - Qualification" apparaît
       comme *nom de tournoi* (pas comme round) dans l'UI — à vérifier si c'est un vrai
       tournoi de qualification distinct côté fournisseur (plausible) ou un artefact de
