@@ -9,20 +9,32 @@ rattaché.
 - Base historique: 108 632+ matchs (ATP/WTA/Challenger H+F, 2021-2026), 4,8M
   statistiques, 7 150+ joueurs, ~1 974 tournois.
 - Cotes historiques: ~13 600/~14 700 matchs éligibles (ATP/WTA, ~20 derniers mois).
+- Bug finales de qualifs corrigé (voir "Connu et résolu" plus bas) et
+  auto-réparé en continu via `daily_sync`.
 - Synchronisation automatique en place sur Render (Cron Jobs) : `daily-sync` (6h UTC),
   `upcoming-odds` (7h UTC), `rankings` (lundi 8h UTC) — confirmé fonctionnel.
 - API de lecture déployée : `https://tennis-data-platform.onrender.com`
   (`/matches`, `/matches/{id}`, `/tournaments`, `/players/{id}/rankings`,
   `/players/{id}/h2h/{other_id}`).
+- Frontend calendrier/résultats fonctionnel en local (React + Vite + Tailwind,
+  dossier `frontend/`) : liste filtrable + page détail (sets, stats, cotes).
+  **Pas encore déployé.**
 - Repo: https://github.com/rafiksiala/tennis-data-platform
 
 ## À faire — bloquant ou à surveiller
 
+- [ ] **Déployer le frontend** sur Render (Static Site, dossier `frontend/`, build
+      `npm install && npm run build`, publish `dist`). Penser à la règle de rewrite SPA
+      (`/*` → `/index.html`) pour que les routes React Router fonctionnent au reload.
 - [ ] **Finir le backfill des cotes** : la dernière passe de nettoyage s'est arrêtée sur
       un quota épuisé à 100/1291 matchs restants. À vérifier/relancer
       (`scripts/backfill_odds.py`).
 - [ ] **CORS** : actuellement ouvert à tout le monde (`allow_origins=["*"]` dans
       `api/main.py`). À restreindre à l'origine du frontend une fois déployé.
+- [ ] **Nom de tournoi bizarre observé** : "Brownsburg (Usa) - Qualification" apparaît
+      comme *nom de tournoi* (pas comme round) dans l'UI — à vérifier si c'est un vrai
+      tournoi de qualification distinct côté fournisseur (plausible) ou un artefact de
+      parsing. Vu une seule fois pour l'instant, pas creusé.
 
 ## À faire — pas bloquant, à traiter avant/pendant l'étape "pages joueurs"
 
@@ -45,6 +57,14 @@ rattaché.
       illogique — à corriger (ex: trier par `season desc, name`) en même temps que le
       remplissage des champs tournoi.
 
+## Connu et résolu (pour référence)
+
+- **Finales de qualifs comptées comme vraies finales** : `event_qualification` du
+  fournisseur souvent `null` au lieu de `False`/`True`. Corrigé par heuristique
+  (la finale la plus tardive d'un tournoi = la vraie) + auto-réparation continue dans
+  `daily_sync` (voir `tennis_data/ingest/maintenance.py`). Ce qui ressemblait à des
+  "doublons de tournois" (ex: "Wimbledon" vs "ATP Wimbledon") était en fait ça.
+
 ## Connu et volontairement laissé de côté
 
 - **ITF non couvert** : décision prise dès le choix du fournisseur (faible valeur
@@ -53,14 +73,11 @@ rattaché.
 - **Point-by-point brut non modélisé relationnellement** : stocké tel quel en JSONB
   (`matches.points_raw`), pas de table dédiée. Volume trop important pour la valeur
   actuelle — à revisiter si un besoin produit précis émerge.
-- **Doublons de tournois liés au nommage** (ex: anciennes observations "Wimbledon" vs
-  "ATP Wimbledon") : investigué le 2026-08-13, s'est avéré être le bug qualifs
-  ci-dessus, pas un vrai doublon de lignes `tournaments`. Rien à faire ici a priori,
-  mais à garder en tête si un cas similaire réapparaît.
 
 ## Prochaine étape
 
-Frontend — calendrier/résultats (étape 10 du plan initial). Stack pas encore décidée.
+Déployer le frontend sur Render, puis continuer le calendrier (pages joueurs, étape 11
+du plan initial) ou avancer sur les analytics selon la priorité du moment.
 
 ## Repères opérationnels
 
