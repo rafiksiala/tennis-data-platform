@@ -144,6 +144,9 @@ class Match(Base):
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     tournament: Mapped["Tournament"] = relationship()
+    player1: Mapped["Player | None"] = relationship(foreign_keys=[player1_id])
+    player2: Mapped["Player | None"] = relationship(foreign_keys=[player2_id])
+    winner: Mapped["Player | None"] = relationship(foreign_keys=[winner_id])
     external_ids: Mapped[list["MatchExternalId"]] = relationship(back_populates="match")
     sets: Mapped[list["MatchSet"]] = relationship(back_populates="match", order_by="MatchSet.set_number")
     statistics: Mapped[list["MatchStatistic"]] = relationship(back_populates="match")
