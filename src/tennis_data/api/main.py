@@ -91,18 +91,36 @@ def list_matches(
 
     # .distinct() n'est necessaire QUE pour la recherche par nom (q): c'est le seul
     # filtre qui fait un join pouvant dupliquer une ligne Match (si player1 ET player2
-    # correspondent tous les deux). Sans q, l'appliquer quand meme forcait Postgres a
-    # trier/dedupliquer toute la table avant de limiter -> timeout sur 100k+ matchs
-    # (trouve par test le 2026-08-13 sur le deploiement Render).
+    # correspondent tous les deux).
     total = query.distinct(Match.id).count() if q else query.count()
-    query = query.options(
-        joinedload(Match.tournament),
-        joinedload(Match.player1),
-        joinedload(Match.player2),
-    ).order_by(Match.scheduled_at.desc().nullslast())
+    # PAS de .nullslast(): aucun match n'a scheduled_at NULL en pratique (verifie le
+    # 2026-08-13), et cette clause a elle seule empeche Postgres d'utiliser l'index sur
+    # scheduled_at (Index Scan Backward, ~2ms) et le force a tout scanner + trier
+    # (Seq Scan + sort, ~4.5s) - confirme par EXPLAIN ANALYZE. Si des NULL apparaissent
+    # un jour, mieux vaut le re-tester explicitement qu'ajouter ça "au cas ou".
+    query = query.order_by(Match.scheduled_at.desc())
     if q:
         query = query.distinct()
-    matches = query.offset(offset).limit(limit).all()
+
+    # PAGINER D'ABORD, ENRICHIR ENSUITE: joindre tournament/player1/player2 puis trier+
+    # limiter force Postgres a construire le JOIN complet (109k+ lignes) avant de pouvoir
+    # trier et limiter, ce qui l'empeche d'utiliser l'index sur scheduled_at (confirme par
+    # EXPLAIN ANALYZE le 2026-08-13: Parallel Seq Scan sur toute la table `matches` malgre
+    # un LIMIT 2). En triant/limitant D'ABORD sur Match seul (index-friendly, rapide), puis
+    # en rechargeant seulement cette petite page avec les jointures, le join ne porte plus
+    # que sur <=200 lignes au lieu de 109k.
+    page_ids = [row[0] for row in query.with_entities(Match.id).offset(offset).limit(limit).all()]
+    if not page_ids:
+        matches = []
+    else:
+        by_id = {
+            m.id: m
+            for m in db.query(Match)
+            .options(joinedload(Match.tournament), joinedload(Match.player1), joinedload(Match.player2))
+            .filter(Match.id.in_(page_ids))
+            .all()
+        }
+        matches = [by_id[i] for i in page_ids if i in by_id]
 
     return MatchListOut(total=total, limit=limit, offset=offset, results=matches)
 
