@@ -1,6 +1,7 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useMatch } from '../api/hooks'
+import { useMatch, usePlayerForm } from '../api/hooks'
 import { StatusBadge } from '../components/StatusBadge'
+import { FormComparison } from '../components/FormComparison'
 import { countryFlag } from '../lib/countries'
 
 const STAT_LABELS: Record<string, string> = {
@@ -19,12 +20,19 @@ const STAT_LABELS: Record<string, string> = {
   service_points_won_pct: 'Service points won (%)',
   return_points_won_pct: 'Return points won (%)',
   total_points_won: 'Total points won',
+  last_10_balls: 'Last 10 points won',
+  match_points_saved: 'Match points saved',
+  service_games_won: 'Service games won',
+  return_games_won: 'Return games won',
+  total_games_won: 'Total games won',
 }
 
 export function MatchDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { data: match, isLoading, isError } = useMatch(id ? Number(id) : undefined)
+  const { data: player1Form } = usePlayerForm(match?.player1?.id)
+  const { data: player2Form } = usePlayerForm(match?.player2?.id)
 
   if (isLoading) return <div className="max-w-2xl mx-auto px-4 py-6 text-slate-500 text-sm">Loading…</div>
   if (isError || !match)
@@ -95,6 +103,8 @@ export function MatchDetailPage() {
           </table>
         )}
       </div>
+
+      <FormComparison player1Form={player1Form} player2Form={player2Form} surface={match.tournament.surface} />
 
       {statNames.length > 0 && (
         <div className="bg-white border border-slate-200 rounded-lg p-4 mb-4">
