@@ -16,21 +16,19 @@ rattaché.
 - API de lecture déployée : `https://tennis-data-platform.onrender.com`
   (`/matches`, `/matches/{id}`, `/tournaments`, `/players/{id}/rankings`,
   `/players/{id}/h2h/{other_id}`).
-- Frontend calendrier/résultats fonctionnel en local (React + Vite + Tailwind,
-  dossier `frontend/`) : liste filtrable + page détail (sets, stats, cotes).
-  **Pas encore déployé.**
+- Frontend calendrier/résultats déployé : https://tennis-data-platform-1.onrender.com
+  (React + Vite + Tailwind, dossier `frontend/`) : liste filtrable + page détail
+  (sets, stats, cotes), tout en anglais.
 - Repo: https://github.com/rafiksiala/tennis-data-platform
 
 ## À faire — bloquant ou à surveiller
 
-- [ ] **Déployer le frontend** sur Render (Static Site, dossier `frontend/`, build
-      `npm install && npm run build`, publish `dist`). Penser à la règle de rewrite SPA
-      (`/*` → `/index.html`) pour que les routes React Router fonctionnent au reload.
 - [ ] **Finir le backfill des cotes** : la dernière passe de nettoyage s'est arrêtée sur
       un quota épuisé à 100/1291 matchs restants. À vérifier/relancer
       (`scripts/backfill_odds.py`).
 - [ ] **CORS** : actuellement ouvert à tout le monde (`allow_origins=["*"]` dans
-      `api/main.py`). À restreindre à l'origine du frontend une fois déployé.
+      `api/main.py`). Le frontend est déployé (https://tennis-data-platform-1.onrender.com)
+      — restreindre CORS à cette seule origine.
 - [ ] **Nom de tournoi bizarre observé** : "Brownsburg (Usa) - Qualification" apparaît
       comme *nom de tournoi* (pas comme round) dans l'UI — à vérifier si c'est un vrai
       tournoi de qualification distinct côté fournisseur (plausible) ou un artefact de
@@ -76,8 +74,8 @@ rattaché.
 
 ## Prochaine étape
 
-Déployer le frontend sur Render, puis continuer le calendrier (pages joueurs, étape 11
-du plan initial) ou avancer sur les analytics selon la priorité du moment.
+Frontend calendrier déployé et validé (voir ci-dessus). Suite possible : pages joueurs
+(étape 11 du plan initial) ou démarrage des analytics, selon la priorité du moment.
 
 ## Repères opérationnels
 
