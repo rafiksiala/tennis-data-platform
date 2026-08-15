@@ -14,11 +14,15 @@ rattaché.
 - Synchronisation automatique en place sur Render (Cron Jobs) : `daily-sync` (6h UTC),
   `upcoming-odds` (7h UTC), `rankings` (lundi 8h UTC) — confirmé fonctionnel.
 - API de lecture déployée : `https://tennis-data-platform.onrender.com`
-  (`/matches`, `/matches/{id}`, `/tournaments`, `/players/{id}/rankings`,
-  `/players/{id}/h2h/{other_id}`).
+  (`/matches`, `/matches/{id}`, `/tournaments`, `/players`, `/players/{id}`,
+  `/players/{id}/rankings`, `/players/{id}/h2h/{other_id}`).
 - Frontend calendrier/résultats déployé : https://tennis-data-platform-gby1.onrender.com
   (React + Vite + Tailwind, dossier `frontend/`) : liste filtrable + page détail
-  (sets, stats, cotes), tout en anglais.
+  (sets, stats, cotes) + pages joueurs (bio, classement, historique, recherche),
+  tout en anglais.
+- Enrichissement bio joueurs en cours (`scripts/enrich_players.py`) : pays + date de
+  naissance pour les joueurs ATP/WTA actifs (24 derniers mois, ~1836 joueurs). Le
+  Challenger actif (~1800 joueurs de plus) n'est pas encore lancé.
 - Repo: https://github.com/rafiksiala/tennis-data-platform
 
 ## À faire — bloquant ou à surveiller
@@ -34,11 +38,18 @@ rattaché.
       tournoi de qualification distinct côté fournisseur (plausible) ou un artefact de
       parsing. Vu une seule fois pour l'instant, pas creusé.
 
-## À faire — pas bloquant, à traiter avant/pendant l'étape "pages joueurs"
+## À faire — pas bloquant
 
-- [ ] **Bio joueurs jamais peuplée** : `country_code`, `birth_date`, `hand` toujours
-      `null`. Il faudrait appeler `get_players` (par `player_id` ou `tournament_key`,
-      voir contrainte API confirmée par test) pour enrichir progressivement.
+- [ ] **Finir l'enrichissement bio joueurs** : ATP/WTA actifs en cours (voir État actuel).
+      Lancer ensuite pour Challenger actif :
+      `python scripts/enrich_players.py --tours challenger_men,challenger_women`.
+      `hand` restera toujours `null` — jamais fourni par le fournisseur (confirmé par
+      test le 2026-08-13).
+- [ ] **Drapeaux emoji ne s'affichent pas sur certaines configs Windows** : le code
+      pays est bien généré (mapping `frontend/src/lib/countries.ts`), mais le rendu
+      graphique dépend des polices du navigateur/OS - affiche le code ISO en texte
+      brut ("ES", "GB") au lieu du drapeau sur certaines machines. Pas un bug de notre
+      code, rien à faire a priori.
 - [ ] **Champs tournoi jamais peuplés** : `level`, `country`, `city`, `prize_money`
       toujours `null`. Utile pour des filtres type "Grand Chelem uniquement".
 - [ ] **Classement précis à la date du match, historique** : on n'a que la précision
@@ -74,8 +85,9 @@ rattaché.
 
 ## Prochaine étape
 
-Frontend calendrier déployé et validé (voir ci-dessus). Suite possible : pages joueurs
-(étape 11 du plan initial) ou démarrage des analytics, selon la priorité du moment.
+Calendrier + pages joueurs déployés et validés (voir ci-dessus). Suite possible :
+démarrage des premiers indicateurs analytics (étape 12 du plan initial), ou pages
+tournois, selon la priorité du moment.
 
 ## Repères opérationnels
 
