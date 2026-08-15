@@ -20,9 +20,9 @@ rattaché.
   (React + Vite + Tailwind, dossier `frontend/`) : liste filtrable + page détail
   (sets, stats, cotes) + pages joueurs (bio, classement, historique, recherche),
   tout en anglais.
-- Enrichissement bio joueurs en cours (`scripts/enrich_players.py`) : pays + date de
-  naissance pour les joueurs ATP/WTA actifs (24 derniers mois, ~1836 joueurs). Le
-  Challenger actif (~1800 joueurs de plus) n'est pas encore lancé.
+- Enrichissement bio joueurs terminé (`scripts/enrich_players.py`) : 4 383 joueurs
+  actifs (ATP/WTA/Challenger, 24 derniers mois) ont pays + date de naissance
+  (`hand` reste toujours `null`, jamais fourni par le fournisseur).
 - Repo: https://github.com/rafiksiala/tennis-data-platform
 
 ## À faire — bloquant ou à surveiller
@@ -40,11 +40,11 @@ rattaché.
 
 ## À faire — pas bloquant
 
-- [ ] **Finir l'enrichissement bio joueurs** : ATP/WTA actifs en cours (voir État actuel).
-      Lancer ensuite pour Challenger actif :
-      `python scripts/enrich_players.py --tours challenger_men,challenger_women`.
-      `hand` restera toujours `null` — jamais fourni par le fournisseur (confirmé par
-      test le 2026-08-13).
+- [x] **Enrichissement bio joueurs terminé** (2026-08-13) : 4 383 joueurs actifs
+      (ATP+WTA+Challenger). `hand` restera toujours `null` — jamais fourni par le
+      fournisseur (confirmé par test). Les joueurs inactifs depuis 24+ mois ou
+      nouvellement rencontrés restent à `null` jusqu'à ce qu'on relance le script -
+      pas automatisé en continu pour l'instant (contrairement au reste du pipeline).
 - [ ] **Drapeaux emoji ne s'affichent pas sur certaines configs Windows** : le code
       pays est bien généré (mapping `frontend/src/lib/countries.ts`), mais le rendu
       graphique dépend des polices du navigateur/OS - affiche le code ISO en texte
