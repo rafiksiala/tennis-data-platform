@@ -16,8 +16,8 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
 from tennis_data.api.deps import get_db
-from tennis_data.api.schemas import MatchDetailOut, MatchListOut, TournamentOut
-from tennis_data.models import Match, MatchStatistic, OddsSnapshot, Player, Tournament
+from tennis_data.api.schemas import H2HOut, MatchDetailOut, MatchListOut, RankingSnapshotOut, TournamentOut
+from tennis_data.models import Match, MatchStatistic, OddsSnapshot, Player, RankingSnapshot, Tournament
 
 app = FastAPI(title="Tennis Data API", version="0.1.0")
 
@@ -172,3 +172,64 @@ def list_tournaments(
     if q:
         query = query.filter(Tournament.name.ilike(f"%{q}%"))
     return query.order_by(Tournament.start_date.desc().nullslast()).limit(limit).all()
+
+
+@app.get("/players/{player_id}/rankings", response_model=list[RankingSnapshotOut])
+def player_rankings(
+    player_id: int,
+    db: Session = Depends(get_db),
+    tour: str | None = Query(None, description="atp | wta - omettre pour les deux"),
+    limit: int = Query(52, le=500, description="Nombre de snapshots, les plus recents d'abord"),
+):
+    """Historique de classement du joueur. precision='weekly' = capture par nos soins
+    (fiable, disponible depuis le 2026-08-08), 'season_approx' = reconstitue depuis le
+    fournisseur pour les periodes anterieures (pas encore implemente - voir modele)."""
+    player = db.query(Player).filter(Player.id == player_id).one_or_none()
+    if not player:
+        raise HTTPException(status_code=404, detail="Joueur introuvable")
+
+    query = db.query(RankingSnapshot).filter(RankingSnapshot.player_id == player_id)
+    if tour:
+        query = query.filter(RankingSnapshot.tour == tour)
+    return query.order_by(RankingSnapshot.snapshot_date.desc()).limit(limit).all()
+
+
+@app.get("/players/{player_id}/h2h/{other_player_id}", response_model=H2HOut)
+def head_to_head(player_id: int, other_player_id: int, db: Session = Depends(get_db)):
+    """Le H2H n'est jamais stocke: toujours recalcule depuis matches, qui est la seule
+    source de verite (voir docstring de models.py)."""
+    player1 = db.query(Player).filter(Player.id == player_id).one_or_none()
+    player2 = db.query(Player).filter(Player.id == other_player_id).one_or_none()
+    if not player1 or not player2:
+        raise HTTPException(status_code=404, detail="Joueur introuvable")
+
+    match_ids = [
+        row[0]
+        for row in db.query(Match.id)
+        .filter(
+            or_(
+                (Match.player1_id == player_id) & (Match.player2_id == other_player_id),
+                (Match.player1_id == other_player_id) & (Match.player2_id == player_id),
+            )
+        )
+        .order_by(Match.scheduled_at.desc())
+        .all()
+    ]
+    matches = []
+    if match_ids:
+        by_id = {
+            m.id: m
+            for m in db.query(Match)
+            .options(joinedload(Match.tournament), joinedload(Match.player1), joinedload(Match.player2))
+            .filter(Match.id.in_(match_ids))
+            .all()
+        }
+        matches = [by_id[i] for i in match_ids if i in by_id]
+
+    return H2HOut(
+        player1=player1,
+        player2=player2,
+        player1_wins=sum(1 for m in matches if m.winner_id == player_id),
+        player2_wins=sum(1 for m in matches if m.winner_id == other_player_id),
+        matches=matches,
+    )

@@ -86,3 +86,21 @@ class MatchDetailOut(MatchOut):
     sets: list[SetOut] = []
     statistics: list[StatisticOut] = []
     odds: list[OddsOut] = []
+
+
+class RankingSnapshotOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    tour: str
+    snapshot_date: date
+    rank: int | None = None
+    points: int | None = None
+    precision: str  # "weekly" (capture par nos soins) | "season_approx" (backfill)
+
+
+class H2HOut(BaseModel):
+    player1: PlayerOut
+    player2: PlayerOut
+    player1_wins: int
+    player2_wins: int
+    matches: list[MatchOut]
