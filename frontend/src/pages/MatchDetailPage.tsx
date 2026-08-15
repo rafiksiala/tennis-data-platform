@@ -1,6 +1,7 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useMatch } from '../api/hooks'
 import { StatusBadge } from '../components/StatusBadge'
+import { countryFlag } from '../lib/countries'
 
 const STAT_LABELS: Record<string, string> = {
   aces: 'Aces',
@@ -56,9 +57,16 @@ export function MatchDetailPage() {
         <div className="space-y-2">
           {[match.player1, match.player2].map((p, i) => (
             <div key={p?.id ?? i} className="flex items-center justify-between">
-              <span className={match.winner_id === p?.id ? 'font-semibold text-slate-900' : 'text-slate-700'}>
-                {p?.full_name ?? 'TBD'}
-              </span>
+              {p ? (
+                <Link
+                  to={`/players/${p.id}`}
+                  className={`hover:underline ${match.winner_id === p.id ? 'font-semibold text-slate-900' : 'text-slate-700'}`}
+                >
+                  {countryFlag(p.country_code)} {p.full_name}
+                </Link>
+              ) : (
+                <span className="text-slate-400">TBD</span>
+              )}
               {i === 0 && <span className="text-sm text-slate-500 tabular-nums">{match.score_raw}</span>}
             </div>
           ))}

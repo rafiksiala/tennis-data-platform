@@ -1,6 +1,37 @@
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from './client'
-import type { H2HOut, MatchDetailOut, MatchFilters, MatchListOut, RankingSnapshotOut, TournamentOut } from './types'
+import type {
+  H2HOut,
+  MatchDetailOut,
+  MatchFilters,
+  MatchListOut,
+  PlayerDetailOut,
+  PlayerOut,
+  RankingSnapshotOut,
+  TournamentOut,
+} from './types'
+
+export function usePlayer(id: number | undefined) {
+  return useQuery({
+    queryKey: ['player', id],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PlayerDetailOut>(`/players/${id}`)
+      return data
+    },
+    enabled: id !== undefined,
+  })
+}
+
+export function usePlayerSearch(q: string) {
+  return useQuery({
+    queryKey: ['player-search', q],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PlayerOut[]>('/players', { params: { q } })
+      return data
+    },
+    enabled: q.trim().length >= 2,
+  })
+}
 
 export function useMatches(filters: MatchFilters) {
   return useQuery({

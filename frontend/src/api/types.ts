@@ -7,6 +7,11 @@ export interface PlayerOut {
   country_code: string | null
 }
 
+export interface PlayerDetailOut extends PlayerOut {
+  birth_date: string | null
+  hand: string | null
+}
+
 export interface TournamentOut {
   id: number
   name: string

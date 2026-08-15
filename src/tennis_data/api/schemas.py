@@ -14,6 +14,11 @@ class PlayerOut(BaseModel):
     country_code: str | None = None
 
 
+class PlayerDetailOut(PlayerOut):
+    birth_date: date | None = None
+    hand: str | None = None  # jamais disponible cote fournisseur pour l'instant (voir TODO.md)
+
+
 class TournamentOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

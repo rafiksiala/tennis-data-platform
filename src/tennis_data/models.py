@@ -48,7 +48,10 @@ class Player(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     full_name: Mapped[str] = mapped_column(String(200))
-    country_code: Mapped[str | None] = mapped_column(String(10))
+    # Malgre le nom, contient le pays BRUT du fournisseur (ex: "Czech Republic"),
+    # pas un code ISO - jamais fourni par l'API (confirme par test le 2026-08-13).
+    # Elargi de 10 a 100 le meme jour suite a une StringDataRightTruncation reelle.
+    country_code: Mapped[str | None] = mapped_column(String(100))
     birth_date: Mapped[date | None] = mapped_column(Date)
     hand: Mapped[str | None] = mapped_column(String(1))  # 'R', 'L', 'U' (inconnu)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

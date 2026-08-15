@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useMatches } from '../api/hooks'
 import { FilterBar } from '../components/FilterBar'
 import { TournamentGroup } from '../components/TournamentGroup'
+import { PlayerSearch } from '../components/PlayerSearch'
 import { toDateStr } from '../lib/date'
 import type { MatchOut } from '../api/types'
 
@@ -34,7 +35,10 @@ export function CalendarPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
-      <h1 className="text-xl font-bold text-slate-900 mb-4">Tennis — Schedule &amp; Results</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-bold text-slate-900">Tennis — Schedule &amp; Results</h1>
+        <PlayerSearch />
+      </div>
 
       <FilterBar
         date={date}

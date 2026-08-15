@@ -16,7 +16,15 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
 from tennis_data.api.deps import get_db
-from tennis_data.api.schemas import H2HOut, MatchDetailOut, MatchListOut, RankingSnapshotOut, TournamentOut
+from tennis_data.api.schemas import (
+    H2HOut,
+    MatchDetailOut,
+    MatchListOut,
+    PlayerDetailOut,
+    PlayerOut,
+    RankingSnapshotOut,
+    TournamentOut,
+)
 from tennis_data.models import Match, MatchStatistic, OddsSnapshot, Player, RankingSnapshot, Tournament
 
 app = FastAPI(title="Tennis Data API", version="0.1.0")
@@ -178,6 +186,29 @@ def list_tournaments(
     if q:
         query = query.filter(Tournament.name.ilike(f"%{q}%"))
     return query.order_by(Tournament.start_date.desc().nullslast()).limit(limit).all()
+
+
+@app.get("/players", response_model=list[PlayerOut])
+def search_players(
+    db: Session = Depends(get_db),
+    q: str = Query(..., min_length=2, description="Recherche par nom, partielle"),
+    limit: int = Query(20, le=100),
+):
+    return (
+        db.query(Player)
+        .filter(Player.full_name.ilike(f"%{q}%"))
+        .order_by(Player.full_name)
+        .limit(limit)
+        .all()
+    )
+
+
+@app.get("/players/{player_id}", response_model=PlayerDetailOut)
+def get_player(player_id: int, db: Session = Depends(get_db)):
+    player = db.query(Player).filter(Player.id == player_id).one_or_none()
+    if not player:
+        raise HTTPException(status_code=404, detail="Joueur introuvable")
+    return player
 
 
 @app.get("/players/{player_id}/rankings", response_model=list[RankingSnapshotOut])
