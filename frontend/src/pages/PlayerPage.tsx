@@ -1,7 +1,8 @@
 import { useParams, Link } from 'react-router-dom'
-import { usePlayer, usePlayerRankings, useMatches } from '../api/hooks'
+import { usePlayer, usePlayerRankings, usePlayerForm, useMatches } from '../api/hooks'
 import { countryFlag } from '../lib/countries'
 import { MatchRow } from '../components/MatchRow'
+import { FormPanel } from '../components/FormPanel'
 import type { RankingSnapshotOut } from '../api/types'
 
 function age(birthDate: string | null): number | null {
@@ -16,6 +17,7 @@ export function PlayerPage() {
 
   const { data: player, isLoading, isError } = usePlayer(playerId)
   const { data: rankings } = usePlayerRankings(playerId)
+  const { data: form } = usePlayerForm(playerId)
   const { data: matches } = useMatches({ player_id: playerId, limit: 20 })
 
   if (isLoading) return <div className="max-w-2xl mx-auto px-4 py-6 text-slate-500 text-sm">Loading…</div>
@@ -61,6 +63,8 @@ export function PlayerPage() {
           </div>
         )}
       </div>
+
+      {form && <FormPanel form={form} />}
 
       <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
         <h2 className="text-sm font-semibold text-slate-800 px-3 py-2 bg-slate-50 border-b border-slate-200">

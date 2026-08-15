@@ -6,6 +6,7 @@ import type {
   MatchFilters,
   MatchListOut,
   PlayerDetailOut,
+  PlayerFormOut,
   PlayerOut,
   RankingSnapshotOut,
   TournamentOut,
@@ -16,6 +17,17 @@ export function usePlayer(id: number | undefined) {
     queryKey: ['player', id],
     queryFn: async () => {
       const { data } = await apiClient.get<PlayerDetailOut>(`/players/${id}`)
+      return data
+    },
+    enabled: id !== undefined,
+  })
+}
+
+export function usePlayerForm(id: number | undefined) {
+  return useQuery({
+    queryKey: ['player-form', id],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PlayerFormOut>(`/players/${id}/form`)
       return data
     },
     enabled: id !== undefined,

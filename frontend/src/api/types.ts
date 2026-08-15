@@ -101,6 +101,36 @@ export interface H2HOut {
   matches: MatchOut[]
 }
 
+export interface SurfaceFormOut {
+  surface: string
+  matches: number
+  wins: number
+  win_rate: number | null
+}
+
+export interface PlayerFormOut {
+  player_id: number
+  as_of: string
+  matches_considered: number
+  matches_last_10: number
+  win_rate_last_10: number | null
+  matches_last_20: number
+  win_rate_last_20: number | null
+  matches_last_30: number
+  win_rate_last_30: number | null
+  matches_3m: number
+  win_rate_3m: number | null
+  matches_6m: number
+  win_rate_6m: number | null
+  matches_12m: number
+  win_rate_12m: number | null
+  by_surface: SurfaceFormOut[]
+  streak_type: 'W' | 'L' | null
+  streak_count: number
+  days_since_last_match: number | null
+  matches_last_30_days: number
+}
+
 export interface MatchFilters {
   date?: string
   date_from?: string
