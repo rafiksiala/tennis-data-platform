@@ -10,18 +10,18 @@ interface Props {
 }
 
 const TOURS = [
-  { value: '', label: 'Tous les tours' },
+  { value: '', label: 'All tours' },
   { value: 'atp', label: 'ATP' },
   { value: 'wta', label: 'WTA' },
-  { value: 'challenger_men', label: 'Challenger H' },
-  { value: 'challenger_women', label: 'Challenger F' },
+  { value: 'challenger_men', label: 'Challenger M' },
+  { value: 'challenger_women', label: 'Challenger W' },
 ]
 
 const STATUSES = [
-  { value: '', label: 'Tous les statuts' },
-  { value: 'live', label: 'En direct' },
-  { value: 'scheduled', label: 'À venir' },
-  { value: 'finished', label: 'Terminés' },
+  { value: '', label: 'All statuses' },
+  { value: 'live', label: 'Live' },
+  { value: 'scheduled', label: 'Scheduled' },
+  { value: 'finished', label: 'Finished' },
 ]
 
 export function FilterBar({ date, onDateChange, tour, onTourChange, status, onStatusChange }: Props) {
@@ -31,7 +31,7 @@ export function FilterBar({ date, onDateChange, tour, onTourChange, status, onSt
         <button
           onClick={() => onDateChange(addDays(date, -1))}
           className="px-2 py-1.5 text-slate-500 hover:text-slate-900"
-          aria-label="Jour precedent"
+          aria-label="Previous day"
         >
           ←
         </button>
@@ -41,7 +41,7 @@ export function FilterBar({ date, onDateChange, tour, onTourChange, status, onSt
         <button
           onClick={() => onDateChange(addDays(date, 1))}
           className="px-2 py-1.5 text-slate-500 hover:text-slate-900"
-          aria-label="Jour suivant"
+          aria-label="Next day"
         >
           →
         </button>

@@ -12,10 +12,10 @@ export function formatDateLabel(dateStr: string): string {
   const today = toDateStr(new Date())
   const yesterday = addDays(today, -1)
   const tomorrow = addDays(today, 1)
-  if (dateStr === today) return "Aujourd'hui"
-  if (dateStr === yesterday) return 'Hier'
-  if (dateStr === tomorrow) return 'Demain'
-  return new Date(dateStr + 'T00:00:00Z').toLocaleDateString('fr-FR', {
+  if (dateStr === today) return 'Today'
+  if (dateStr === yesterday) return 'Yesterday'
+  if (dateStr === tomorrow) return 'Tomorrow'
+  return new Date(dateStr + 'T00:00:00Z').toLocaleDateString('en-US', {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
@@ -24,5 +24,5 @@ export function formatDateLabel(dateStr: string): string {
 
 export function formatTime(isoStr: string | null): string {
   if (!isoStr) return '-'
-  return new Date(isoStr).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  return new Date(isoStr).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
 }

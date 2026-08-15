@@ -34,7 +34,7 @@ export function CalendarPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
-      <h1 className="text-xl font-bold text-slate-900 mb-4">Tennis — Calendrier &amp; Résultats</h1>
+      <h1 className="text-xl font-bold text-slate-900 mb-4">Tennis — Schedule &amp; Results</h1>
 
       <FilterBar
         date={date}
@@ -45,10 +45,10 @@ export function CalendarPage() {
         onStatusChange={setStatus}
       />
 
-      {isLoading && <p className="text-slate-500 text-sm">Chargement…</p>}
-      {isError && <p className="text-red-600 text-sm">Erreur de chargement des matchs.</p>}
+      {isLoading && <p className="text-slate-500 text-sm">Loading…</p>}
+      {isError && <p className="text-red-600 text-sm">Error loading matches.</p>}
       {!isLoading && !isError && groups.length === 0 && (
-        <p className="text-slate-500 text-sm">Aucun match pour ces filtres.</p>
+        <p className="text-slate-500 text-sm">No matches for these filters.</p>
       )}
 
       <div className={isPlaceholderData ? 'opacity-60 transition-opacity' : ''}>
@@ -59,7 +59,7 @@ export function CalendarPage() {
 
       {data && data.total > (data.results.length + data.offset) && (
         <p className="text-xs text-slate-400 text-center mt-2">
-          {data.results.length} sur {data.total} matchs affichés
+          Showing {data.results.length} of {data.total} matches
         </p>
       )}
     </div>

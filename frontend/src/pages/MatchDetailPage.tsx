@@ -4,20 +4,20 @@ import { StatusBadge } from '../components/StatusBadge'
 
 const STAT_LABELS: Record<string, string> = {
   aces: 'Aces',
-  double_faults: 'Doubles fautes',
-  first_serve_pct: '1er service (%)',
-  first_serve_points_won_pct: 'Points gagnés au 1er service (%)',
-  second_serve_points_won_pct: 'Points gagnés au 2e service (%)',
-  break_points_saved_pct: 'Balles de break sauvées (%)',
-  first_return_points_won_pct: 'Points gagnés au retour du 1er service (%)',
-  second_return_points_won_pct: 'Points gagnés au retour du 2e service (%)',
-  break_points_converted_pct: 'Balles de break converties (%)',
-  winners: 'Coups gagnants',
-  unforced_errors: 'Fautes directes',
-  net_points_won_pct: 'Points gagnés au filet (%)',
-  service_points_won_pct: 'Points gagnés au service (%)',
-  return_points_won_pct: 'Points gagnés au retour (%)',
-  total_points_won: 'Total points gagnés',
+  double_faults: 'Double faults',
+  first_serve_pct: '1st serve (%)',
+  first_serve_points_won_pct: '1st serve points won (%)',
+  second_serve_points_won_pct: '2nd serve points won (%)',
+  break_points_saved_pct: 'Break points saved (%)',
+  first_return_points_won_pct: '1st serve return points won (%)',
+  second_return_points_won_pct: '2nd serve return points won (%)',
+  break_points_converted_pct: 'Break points converted (%)',
+  winners: 'Winners',
+  unforced_errors: 'Unforced errors',
+  net_points_won_pct: 'Net points won (%)',
+  service_points_won_pct: 'Service points won (%)',
+  return_points_won_pct: 'Return points won (%)',
+  total_points_won: 'Total points won',
 }
 
 export function MatchDetailPage() {
@@ -25,9 +25,9 @@ export function MatchDetailPage() {
   const navigate = useNavigate()
   const { data: match, isLoading, isError } = useMatch(id ? Number(id) : undefined)
 
-  if (isLoading) return <div className="max-w-2xl mx-auto px-4 py-6 text-slate-500 text-sm">Chargement…</div>
+  if (isLoading) return <div className="max-w-2xl mx-auto px-4 py-6 text-slate-500 text-sm">Loading…</div>
   if (isError || !match)
-    return <div className="max-w-2xl mx-auto px-4 py-6 text-red-600 text-sm">Match introuvable.</div>
+    return <div className="max-w-2xl mx-auto px-4 py-6 text-red-600 text-sm">Match not found.</div>
 
   const matchStats = match.statistics.filter((s) => s.stat_period === 'match')
   const p1Stats = new Map(matchStats.filter((s) => s.player_id === match.player1?.id).map((s) => [s.stat_name, s]))
@@ -40,7 +40,7 @@ export function MatchDetailPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
       <button onClick={() => navigate(-1)} className="text-sm text-blue-700 hover:underline mb-4">
-        ← Retour
+        ← Back
       </button>
 
       <div className="bg-white border border-slate-200 rounded-lg p-4 mb-4">
@@ -90,7 +90,7 @@ export function MatchDetailPage() {
 
       {statNames.length > 0 && (
         <div className="bg-white border border-slate-200 rounded-lg p-4 mb-4">
-          <h2 className="text-sm font-semibold text-slate-800 mb-3">Statistiques du match</h2>
+          <h2 className="text-sm font-semibold text-slate-800 mb-3">Match statistics</h2>
           <table className="w-full text-sm">
             <thead>
               <tr className="text-slate-500 text-xs">
@@ -115,10 +115,10 @@ export function MatchDetailPage() {
       {latestOdds.length > 0 && (
         <div className="bg-white border border-slate-200 rounded-lg p-4">
           <h2 className="text-sm font-semibold text-slate-800 mb-1">
-            Cotes vainqueur du match
+            Match winner odds
             {match.odds[0].is_retroactive && (
               <span className="ml-2 text-[11px] font-normal text-amber-600">
-                (récupérées après coup, pas forcément la cote d'ouverture exacte)
+                (captured retroactively, not necessarily the exact opening odds)
               </span>
             )}
           </h2>

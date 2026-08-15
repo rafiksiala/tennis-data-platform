@@ -4,10 +4,10 @@ import { MatchRow } from './MatchRow'
 const TOUR_LABELS: Record<string, string> = {
   atp: 'ATP',
   wta: 'WTA',
-  challenger_men: 'Challenger H',
-  challenger_women: 'Challenger F',
-  itf_men: 'ITF H',
-  itf_women: 'ITF F',
+  challenger_men: 'Challenger M',
+  challenger_women: 'Challenger W',
+  itf_men: 'ITF M',
+  itf_women: 'ITF W',
 }
 
 export function TournamentGroup({ matches }: { matches: MatchOut[] }) {

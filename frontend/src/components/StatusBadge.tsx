@@ -1,13 +1,13 @@
 import type { MatchStatus } from '../api/types'
 
 const LABELS: Record<MatchStatus, string> = {
-  scheduled: 'À venir',
-  live: 'EN DIRECT',
-  finished: 'Terminé',
-  retired: 'Abandon',
+  scheduled: 'Scheduled',
+  live: 'LIVE',
+  finished: 'Finished',
+  retired: 'Retired',
   walkover: 'W.O.',
-  cancelled: 'Annulé',
-  postponed: 'Reporté',
+  cancelled: 'Cancelled',
+  postponed: 'Postponed',
 }
 
 const STYLES: Record<MatchStatus, string> = {
