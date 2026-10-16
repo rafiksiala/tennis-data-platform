@@ -82,8 +82,12 @@ def main():
             break
         except Exception as exc:  # noqa: BLE001
             print(f"[{tour}] ECHEC ({exc}), on continue sur le suivant")
-            _log_run_safely(job_name=f"capture_rankings:{tour}", status="failed",
-                             finished_at=datetime.now(timezone.utc), error_message=str(exc)[:1000])
+            _log_run_safely(
+                job_name=f"capture_rankings:{tour}",
+                status="failed",
+                finished_at=datetime.now(timezone.utc),
+                error_message=str(exc)[:1000],
+            )
 
     print(f"Termine: {total_inserted} nouveaux snapshots de classement pour le {today}")
 

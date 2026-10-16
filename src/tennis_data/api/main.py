@@ -197,13 +197,7 @@ def search_players(
     q: str = Query(..., min_length=2, description="Recherche par nom, partielle"),
     limit: int = Query(20, le=100),
 ):
-    return (
-        db.query(Player)
-        .filter(Player.full_name.ilike(f"%{q}%"))
-        .order_by(Player.full_name)
-        .limit(limit)
-        .all()
-    )
+    return db.query(Player).filter(Player.full_name.ilike(f"%{q}%")).order_by(Player.full_name).limit(limit).all()
 
 
 @app.get("/players/{player_id}", response_model=PlayerDetailOut)

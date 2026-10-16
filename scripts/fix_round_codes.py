@@ -73,8 +73,10 @@ def main():
                     time.sleep(5 * attempt)
 
         if last_exc is not None:
-            print(f"ECHEC DEFINITIF apres {MAX_ATTEMPTS} tentatives sur le lot apres id={last_id}. "
-                  f"Relance le script: il reprendra depuis le debut (idempotent, rapide sur le deja-bon).")
+            print(
+                f"ECHEC DEFINITIF apres {MAX_ATTEMPTS} tentatives sur le lot apres id={last_id}. "
+                f"Relance le script: il reprendra depuis le debut (idempotent, rapide sur le deja-bon)."
+            )
             break
 
         if new_last_id is None:

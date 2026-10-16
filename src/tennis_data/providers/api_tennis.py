@@ -11,8 +11,9 @@ Regroupe tout ce qui a ete confirme par test le 2026-08-08 (voir tennis-data-res
 """
 
 import time
+from collections.abc import Iterator
 from datetime import datetime, timedelta
-from typing import Any, Iterator
+from typing import Any
 
 import requests
 
@@ -69,7 +70,7 @@ class ApiTennisClient:
             except (requests.RequestException, ApiTennisError, ValueError) as exc:
                 last_exc = exc
                 if attempt < self.max_retries:
-                    time.sleep(2 ** attempt)  # backoff exponentiel: 2s, 4s, 8s...
+                    time.sleep(2**attempt)  # backoff exponentiel: 2s, 4s, 8s...
         raise ApiTennisError(f"echec apres {self.max_retries} tentatives sur {method}: {last_exc}") from last_exc
 
     @staticmethod

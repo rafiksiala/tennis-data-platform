@@ -42,8 +42,12 @@ def main():
         surface_lookup = build_surface_lookup(client)
     except ApiTennisQuotaExceeded as exc:
         print(f"QUOTA API EPUISE avant meme de demarrer ({exc}). Le prochain run planifie reprendra normalement.")
-        _log_run_safely(job_name="daily_sync", status="failed", finished_at=datetime.now(timezone.utc),
-                         error_message=str(exc)[:1000])
+        _log_run_safely(
+            job_name="daily_sync",
+            status="failed",
+            finished_at=datetime.now(timezone.utc),
+            error_message=str(exc)[:1000],
+        )
         return
 
     date_start = str(datetime.now().date() - timedelta(days=LOOKBACK_DAYS))
@@ -58,7 +62,10 @@ def main():
                 session.flush()
 
                 fixtures = client.get_fixtures_range(date_start, date_stop, event_type_key=EVENT_TYPES[tour_key])
-                n_calls = -(-((datetime.strptime(date_stop, "%Y-%m-%d") - datetime.strptime(date_start, "%Y-%m-%d")).days + 1) // 7)
+                n_calls = -(
+                    -((datetime.strptime(date_stop, "%Y-%m-%d") - datetime.strptime(date_start, "%Y-%m-%d")).days + 1)
+                    // 7
+                )
                 print(f"[{tour_key}] {len(fixtures)} matchs sur la fenetre {date_start} -> {date_stop}")
                 for fx in fixtures:
                     upsert_match_from_fixture(session, fx, tour_surface_lookup=surface_lookup)
@@ -75,8 +82,12 @@ def main():
             break
         except Exception as exc:  # noqa: BLE001 - un tour en echec ne doit pas bloquer les autres
             print(f"[{tour_key}] ECHEC ({exc}), on continue sur le suivant")
-            _log_run_safely(job_name=f"daily_sync:{tour_key}", status="failed",
-                             finished_at=datetime.now(timezone.utc), error_message=str(exc)[:1000])
+            _log_run_safely(
+                job_name=f"daily_sync:{tour_key}",
+                status="failed",
+                finished_at=datetime.now(timezone.utc),
+                error_message=str(exc)[:1000],
+            )
         time.sleep(0.3)
 
     try:

@@ -122,7 +122,7 @@ def main():
             print("Arret propre. Relance le script plus tard: il reprendra sur les joueurs restants.")
             break
         except Exception as exc:  # noqa: BLE001
-            print(f"  lot {i}-{i+len(chunk)}: ECHEC ({exc}), on continue sur le suivant")
+            print(f"  lot {i}-{i + len(chunk)}: ECHEC ({exc}), on continue sur le suivant")
             continue
         total_found += result["found"]
         total_not_found += result["not_found"]

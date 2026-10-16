@@ -1,6 +1,6 @@
 """Dependance FastAPI: une session DB par requete, fermee automatiquement a la fin."""
 
-from typing import Iterator
+from collections.abc import Iterator
 
 from sqlalchemy.orm import Session
 

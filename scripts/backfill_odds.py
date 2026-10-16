@@ -118,11 +118,13 @@ def main():
             result = process_chunk(client, chunk)
         except ApiTennisQuotaExceeded as exc:
             print(f"\nQUOTA API EPUISE a {i}/{len(candidates)} matchs traites ({exc})")
-            print("Arret propre. Relance le script plus tard (apres reset du quota, ou plan"
-                  " superieur): il reprendra automatiquement la ou il s'est arrete.")
+            print(
+                "Arret propre. Relance le script plus tard (apres reset du quota, ou plan"
+                " superieur): il reprendra automatiquement la ou il s'est arrete."
+            )
             break
         except Exception as exc:  # noqa: BLE001 - un lot en echec ne doit pas arreter le reste
-            print(f"  lot {i}-{i+len(chunk)}: ECHEC ({exc}), on continue sur le suivant")
+            print(f"  lot {i}-{i + len(chunk)}: ECHEC ({exc}), on continue sur le suivant")
             _log_run_safely(
                 job_name="backfill_odds",
                 status="failed",
@@ -133,13 +135,12 @@ def main():
         total_found += result["found"]
         total_not_found += result["not_found"]
         total_calls += result["calls"]
-        print(
-            f"  ... {i + len(chunk)}/{len(candidates)} traites "
-            f"(trouve={total_found}, absent={total_not_found})"
-        )
+        print(f"  ... {i + len(chunk)}/{len(candidates)} traites (trouve={total_found}, absent={total_not_found})")
 
-    print(f"Termine: {total_found} matchs avec cotes recuperees, {total_not_found} sans cotes "
-          f"(trop anciens ou non couverts), {total_calls} appels API")
+    print(
+        f"Termine: {total_found} matchs avec cotes recuperees, {total_not_found} sans cotes "
+        f"(trop anciens ou non couverts), {total_calls} appels API"
+    )
 
 
 if __name__ == "__main__":

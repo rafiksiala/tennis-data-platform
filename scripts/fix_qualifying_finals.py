@@ -14,7 +14,6 @@ Usage:
     python scripts/fix_qualifying_finals.py
 """
 
-
 from sqlalchemy import text
 
 from tennis_data.db import get_session
