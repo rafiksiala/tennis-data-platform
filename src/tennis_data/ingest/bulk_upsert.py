@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 
 from tennis_data.ingest.mapping import (
     SOURCE,
+    fixture_season,
     normalize_round,
     normalize_stat_name,
     normalize_status,
@@ -90,7 +91,7 @@ def _process_batch(session: Session, fixtures: list[dict], cache: BulkCache, tou
                 new_players[key] = Player(full_name=name or f"unknown_{key}")
 
         tkey = fx.get("tournament_key")
-        season = int(fx.get("tournament_season") or 0) or datetime.now().year
+        season = fixture_season(fx)
         composite = f"{tkey}_{season}"
         if composite not in cache.tournament_ids and composite not in new_tournaments:
             tour = TOUR_LABELS.get(fx.get("event_type_type"), (fx.get("event_type_type") or "unknown").lower())
@@ -131,7 +132,7 @@ def _process_batch(session: Session, fixtures: list[dict], cache: BulkCache, tou
             continue
 
         tkey = fx.get("tournament_key")
-        season = int(fx.get("tournament_season") or 0) or datetime.now().year
+        season = fixture_season(fx)
         composite = f"{tkey}_{season}"
         tournament_id = cache.tournament_ids.get(composite)
 

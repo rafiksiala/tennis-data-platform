@@ -94,7 +94,9 @@ class Tournament(Base):
     surface: Mapped[str | None] = mapped_column(String(20))  # hard | clay | grass | carpet
     country: Mapped[str | None] = mapped_column(String(100))
     city: Mapped[str | None] = mapped_column(String(100))
-    season: Mapped[int | None] = mapped_column()
+    season: Mapped[int | None] = (
+        mapped_column()
+    )  # deduite de la date des matchs (ingest/seasons.py), pas du fournisseur
     start_date: Mapped[date | None] = mapped_column(Date)
     end_date: Mapped[date | None] = mapped_column(Date)
     prize_money: Mapped[float | None] = mapped_column(Numeric(14, 2))

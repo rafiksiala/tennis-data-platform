@@ -78,3 +78,37 @@ class TestScheduledAtIsUtc:
         assert first.id == second.id
         assert db_session.query(Match).count() == 1
         assert reload(db_session, first.id).scheduled_at == datetime(2026, 9, 5, 16, 30, tzinfo=timezone.utc)
+
+
+class TestEditionSeason:
+    def test_provider_season_is_ignored_when_it_contradicts_the_date(self, db_session):
+        qualifying = upsert_match_from_fixture(
+            db_session, fixture(event_key=1, event_date="2026-08-20", tournament_season="2026")
+        )
+        main_draw = upsert_match_from_fixture(
+            db_session, fixture(event_key=2, event_date="2026-09-01", tournament_season="2025")
+        )
+        db_session.flush()
+
+        assert qualifying.tournament_id == main_draw.tournament_id
+        assert qualifying.tournament.season == 2026
+
+    def test_previous_edition_stays_separate(self, db_session):
+        edition_2025 = upsert_match_from_fixture(db_session, fixture(event_key=1, event_date="2025-09-01"))
+        edition_2026 = upsert_match_from_fixture(db_session, fixture(event_key=2, event_date="2026-09-01"))
+        db_session.flush()
+
+        assert edition_2025.tournament_id != edition_2026.tournament_id
+        assert (edition_2025.tournament.season, edition_2026.tournament.season) == (2025, 2026)
+        assert edition_2025.tournament.external_series_key == edition_2026.tournament.external_series_key == "1217"
+
+    def test_backfill_uses_the_same_rule(self, db_session):
+        cache = BulkCache(db_session)
+        fixtures = [
+            fixture(event_key=1, event_date="2026-08-20", tournament_season="2026"),
+            fixture(event_key=2, event_date="2026-09-01", tournament_season="2025"),
+        ]
+        assert bulk_upsert_fixtures(db_session, fixtures, cache, {}) == 2
+
+        assert set(cache.tournament_ids) == {"1217_2026"}
+        assert {m.tournament_id for m in db_session.query(Match)} == {cache.tournament_ids["1217_2026"]}

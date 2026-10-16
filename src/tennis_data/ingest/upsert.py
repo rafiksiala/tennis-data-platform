@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from tennis_data.ingest.mapping import (
     SOURCE,
+    fixture_season,
     normalize_round,
     normalize_stat_name,
     normalize_status,
@@ -98,7 +99,7 @@ def upsert_match_from_fixture(
 
     tour = TOUR_LABELS.get(fixture.get("event_type_type"), fixture.get("event_type_type", "unknown").lower())
     tournament_key = fixture.get("tournament_key")
-    season = int(fixture.get("tournament_season") or 0) or datetime.now().year
+    season = fixture_season(fixture)
     surface = tour_surface_lookup.get(str(tournament_key))
     tournament = get_or_create_tournament(
         session,

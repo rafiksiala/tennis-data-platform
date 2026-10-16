@@ -6,9 +6,10 @@ Si on change/ajoute un fournisseur un jour, on ecrit un module mapping equivalen
 lui, et le reste du pipeline (upsert, analytics) n'a rien a savoir de la difference.
 """
 
-from datetime import datetime
+from datetime import date, datetime, timezone
 from zoneinfo import ZoneInfo
 
+from tennis_data.ingest.seasons import season_for_date
 from tennis_data.timeutil import wall_time_to_utc
 
 SOURCE = "api_tennis"
@@ -133,6 +134,23 @@ def parse_event_datetime(event_date: str | None, event_time: str | None) -> date
     except ValueError:
         return None
     return wall_time_to_utc(local)
+
+
+def fixture_season(fixture: dict) -> int:
+    """Saison de l'edition a laquelle rattacher le match: deduite de event_date (date du
+    match a Berlin), car tournament_season n'est pas fiable (voir seasons.py). Repli sur
+    tournament_season si la date manque, puis sur l'annee en cours."""
+    raw_date = fixture.get("event_date")
+    if raw_date:
+        try:
+            return season_for_date(date.fromisoformat(raw_date))
+        except ValueError:
+            pass
+    try:
+        season = int(fixture.get("tournament_season") or 0)
+    except (TypeError, ValueError):
+        season = 0
+    return season or datetime.now(timezone.utc).year
 
 
 def flatten_odds(odds_dict: dict) -> list[dict]:
