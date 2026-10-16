@@ -6,7 +6,18 @@ Si on change/ajoute un fournisseur un jour, on ecrit un module mapping equivalen
 lui, et le reste du pipeline (upsert, analytics) n'a rien a savoir de la difference.
 """
 
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+from tennis_data.timeutil import wall_time_to_utc
+
 SOURCE = "api_tennis"
+
+# Sans parametre `timezone` dans la requete (on n'en passe pas), API-Tennis renvoie
+# event_date/event_time en heure de Berlin (doc officielle), PAS en UTC. Avant le
+# 2026-10-16 ces heures etaient stockees telles quelles comme si c'etait de l'UTC
+# (1 a 2 h de decalage, voir docs/adr/0003-utc-timestamps.md).
+PROVIDER_TZ = ZoneInfo("Europe/Berlin")
 
 STATUS_MAP = {
     "finished": "finished",
@@ -109,6 +120,19 @@ def parse_stat_value(raw_value: str | None) -> float | None:
         return float(cleaned)
     except ValueError:
         return None
+
+
+def parse_event_datetime(event_date: str | None, event_time: str | None) -> datetime | None:
+    """event_date ("YYYY-MM-DD") + event_time ("HH:MM"), en heure de Berlin -> instant UTC
+    (datetime aware). Sans heure, minuit heure de Berlin (comme avant). None si la date
+    manque ou est illisible."""
+    if not event_date:
+        return None
+    try:
+        local = datetime.strptime(f"{event_date} {event_time or '00:00'}", "%Y-%m-%d %H:%M").replace(tzinfo=PROVIDER_TZ)
+    except ValueError:
+        return None
+    return wall_time_to_utc(local)
 
 
 def flatten_odds(odds_dict: dict) -> list[dict]:

@@ -17,7 +17,7 @@ ne changent plus) mais PAS adapte a la synchro quotidienne, qui doit gerer les
 corrections de matchs recents -> daily_sync.py continue donc a utiliser upsert.py.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -26,6 +26,7 @@ from tennis_data.ingest.mapping import (
     normalize_round,
     normalize_stat_name,
     normalize_status,
+    parse_event_datetime,
     parse_score_component,
     parse_stat_value,
 )
@@ -149,14 +150,7 @@ def _process_batch(session: Session, fixtures: list[dict], cache: BulkCache, tou
         is_qualification = str(fx.get("event_qualification", "")).strip().lower() == "true"
         round_code, round_raw = normalize_round(fx.get("tournament_round"), is_qualification)
 
-        scheduled_at = None
-        if fx.get("event_date"):
-            try:
-                scheduled_at = datetime.strptime(
-                    f"{fx['event_date']} {fx.get('event_time') or '00:00'}", "%Y-%m-%d %H:%M"
-                )
-            except ValueError:
-                scheduled_at = None
+        scheduled_at = parse_event_datetime(fx.get("event_date"), fx.get("event_time"))
 
         match = Match(
             tournament_id=tournament_id,
@@ -171,7 +165,7 @@ def _process_batch(session: Session, fixtures: list[dict], cache: BulkCache, tou
             scheduled_at=scheduled_at,
             score_raw=fx.get("event_final_result"),
             points_raw={"pointbypoint": fx["pointbypoint"]} if fx.get("pointbypoint") else None,
-            last_synced_at=datetime.utcnow(),
+            last_synced_at=datetime.now(timezone.utc),
         )
         session.add(match)
         new_matches[event_key] = match
