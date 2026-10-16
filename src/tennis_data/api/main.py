@@ -29,6 +29,7 @@ from tennis_data.api.schemas import (
     TournamentOut,
 )
 from tennis_data.models import Match, MatchStatistic, OddsSnapshot, Player, RankingSnapshot, Tournament
+from tennis_data.monitoring import FreshnessCache
 
 app = FastAPI(title="Tennis Data API", version="0.1.0")
 
@@ -53,9 +54,16 @@ def _utc_midnight(day: date) -> datetime:
     return datetime.combine(day, time.min, tzinfo=timezone.utc)
 
 
+_freshness = FreshnessCache(ttl=timedelta(minutes=5))
+
+
 @app.get("/health")
-def health():
-    return {"status": "ok"}
+def health(db: Session = Depends(get_db)):
+    """Toujours 200 tant que l'API tourne: Render s'en sert comme sonde de vie, et des
+    donnees perimees (base gelee volontairement) ne doivent pas faire redemarrer le
+    service. La fraicheur est dans `data` (`stale` = un circuit n'a pas ete synchronise
+    depuis plus de 36 h), recalculee au plus toutes les 5 minutes."""
+    return {"status": "ok", "data": _freshness.get(db)}
 
 
 @app.get("/matches", response_model=MatchListOut)
