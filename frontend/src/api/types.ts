@@ -132,9 +132,13 @@ export interface PlayerFormOut {
 }
 
 export interface MatchFilters {
+  // date / date_from / date_to: jours UTC (YYYY-MM-DD)
   date?: string
   date_from?: string
   date_to?: string
+  // Instants ISO 8601, intervalle [from, to[: pour un jour local, voir localDayBounds()
+  from?: string
+  to?: string
   tour?: string
   surface?: string
   round_code?: string
