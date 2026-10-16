@@ -43,6 +43,7 @@ select = [
     "I",   # isort
     "B",   # flake8-bugbear
     "UP",  # pyupgrade
+    "DTZ", # datetimes sans fuseau interdits (ADR-0003: tout en UTC)
 ]
 ignore = [
     "UP017",  # on garde timezone.utc, idiome deja utilise partout
@@ -58,6 +59,8 @@ known-first-party = ["tennis_data"]
 [tool.ruff.lint.per-file-ignores]
 # migrations generees par Alembic: on garde le format genere
 "migrations/versions/*" = ["UP", "I"]
+# les tests construisent volontairement des heures sans fuseau (heures murales, entrees naives)
+"tests/*" = ["DTZ001"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

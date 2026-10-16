@@ -13,11 +13,11 @@ Usage:
 """
 
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from tennis_data.db import get_session
 from tennis_data.ingest.enrich import build_surface_lookup
-from tennis_data.ingest.maintenance import reclassify_stale_qualifying_finals
+from tennis_data.ingest.maintenance import relabel_finals
 from tennis_data.ingest.upsert import upsert_match_from_fixture
 from tennis_data.models import IngestRun
 from tennis_data.providers.api_tennis import EVENT_TYPES, ApiTennisClient, ApiTennisQuotaExceeded
@@ -50,8 +50,9 @@ def main():
         )
         return
 
-    date_start = str(datetime.now().date() - timedelta(days=LOOKBACK_DAYS))
-    date_stop = str(datetime.now().date() + timedelta(days=LOOKAHEAD_DAYS))
+    today = datetime.now(timezone.utc).date()
+    date_start = str(today - timedelta(days=LOOKBACK_DAYS))
+    date_stop = str(today + timedelta(days=LOOKAHEAD_DAYS))
 
     total, calls = 0, 0
     for tour_key in TOURS:
@@ -62,10 +63,7 @@ def main():
                 session.flush()
 
                 fixtures = client.get_fixtures_range(date_start, date_stop, event_type_key=EVENT_TYPES[tour_key])
-                n_calls = -(
-                    -((datetime.strptime(date_stop, "%Y-%m-%d") - datetime.strptime(date_start, "%Y-%m-%d")).days + 1)
-                    // 7
-                )
+                n_calls = -(-((date.fromisoformat(date_stop) - date.fromisoformat(date_start)).days + 1) // 7)
                 print(f"[{tour_key}] {len(fixtures)} matchs sur la fenetre {date_start} -> {date_stop}")
                 for fx in fixtures:
                     upsert_match_from_fixture(session, fx, tour_surface_lookup=surface_lookup)
@@ -92,11 +90,11 @@ def main():
 
     try:
         with get_session() as session:
-            n_reclassified = reclassify_stale_qualifying_finals(session)
-        if n_reclassified:
-            print(f"  {n_reclassified} finales de qualifs fraichement arrivees reclassees (F -> Q-F)")
+            finals = relabel_finals(session)
+        if finals.total:
+            print(f"  finales reetiquetees: {finals.demoted} F -> Q-F, {finals.promoted} Q-F -> F")
     except Exception as exc:  # noqa: BLE001 - ne doit pas faire echouer tout le sync
-        print(f"  (reclassification qualifs echouee: {exc})")
+        print(f"  (reetiquetage des finales echoue: {exc})")
 
     print(f"Termine: {total} matchs synchronises (crees ou mis a jour), {calls} appels API")
 

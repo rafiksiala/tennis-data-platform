@@ -3,15 +3,17 @@ Upsert idempotent: transforme un enregistrement brut API-Tennis en lignes dans n
 modele normalise. Rejouable sans creer de doublons (cle = external_id du fournisseur).
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
 from tennis_data.ingest.mapping import (
     SOURCE,
+    fixture_season,
     normalize_round,
     normalize_stat_name,
     normalize_status,
+    parse_event_datetime,
     parse_score_component,
     parse_stat_value,
 )
@@ -97,7 +99,7 @@ def upsert_match_from_fixture(
 
     tour = TOUR_LABELS.get(fixture.get("event_type_type"), fixture.get("event_type_type", "unknown").lower())
     tournament_key = fixture.get("tournament_key")
-    season = int(fixture.get("tournament_season") or 0) or datetime.now().year
+    season = fixture_season(fixture)
     surface = tour_surface_lookup.get(str(tournament_key))
     tournament = get_or_create_tournament(
         session,
@@ -123,13 +125,7 @@ def upsert_match_from_fixture(
     is_qualification = str(fixture.get("event_qualification", "")).strip().lower() == "true"
     round_code, round_raw = normalize_round(fixture.get("tournament_round"), is_qualification)
 
-    scheduled_at = None
-    if fixture.get("event_date"):
-        time_part = fixture.get("event_time") or "00:00"
-        try:
-            scheduled_at = datetime.strptime(f"{fixture['event_date']} {time_part}", "%Y-%m-%d %H:%M")
-        except ValueError:
-            scheduled_at = None
+    scheduled_at = parse_event_datetime(fixture.get("event_date"), fixture.get("event_time"))
 
     link = session.query(MatchExternalId).filter_by(source=SOURCE, external_id=str(event_key)).one_or_none()
     match = link.match if link else Match(tournament_id=tournament.id)
@@ -146,7 +142,7 @@ def upsert_match_from_fixture(
     match.scheduled_at = scheduled_at
     match.score_raw = fixture.get("event_final_result")
     match.points_raw = {"pointbypoint": fixture.get("pointbypoint")} if fixture.get("pointbypoint") else None
-    match.last_synced_at = datetime.utcnow()
+    match.last_synced_at = datetime.now(timezone.utc)
 
     if not link:
         session.add(match)

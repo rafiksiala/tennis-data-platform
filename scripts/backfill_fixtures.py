@@ -16,7 +16,7 @@ Usage:
 
 import argparse
 import time
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from tennis_data.db import get_session
 from tennis_data.ingest.bulk_upsert import BulkCache, bulk_upsert_fixtures
@@ -68,9 +68,7 @@ def backfill_tour(client: ApiTennisClient, tour_key: str, start: str, end: str, 
 
         year_start = f"{year}-01-01" if year > int(start[:4]) else start
         year_end = f"{year}-12-31" if year < int(end[:4]) else end
-        n_calls = -(
-            -((datetime.strptime(year_end, "%Y-%m-%d") - datetime.strptime(year_start, "%Y-%m-%d")).days + 1) // 7
-        )
+        n_calls = -(-((date.fromisoformat(year_end) - date.fromisoformat(year_start)).days + 1) // 7)
 
         last_exc = None
         for attempt in range(1, MAX_ATTEMPTS + 1):
@@ -123,7 +121,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--tours", default="atp_singles,wta_singles,challenger_men_singles,challenger_women_singles")
     parser.add_argument("--start", default=DEFAULT_START)
-    parser.add_argument("--end", default=str(datetime.now().date()))
+    parser.add_argument("--end", default=str(datetime.now(timezone.utc).date()))
     args = parser.parse_args()
 
     client = ApiTennisClient()

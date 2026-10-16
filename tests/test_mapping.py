@@ -4,6 +4,8 @@ Les libelles bruts viennent de donnees reelles (round_raw en base, 2026-10-16):
 "<tournoi> - 1/8-finals", "Quarter-finals", "Semi-finals", "Final".
 """
 
+from datetime import datetime, timedelta, timezone
+
 import pytest
 
 from tennis_data.ingest.mapping import (
@@ -11,6 +13,7 @@ from tennis_data.ingest.mapping import (
     normalize_round,
     normalize_stat_name,
     normalize_status,
+    parse_event_datetime,
     parse_score_component,
     parse_stat_value,
 )
@@ -131,6 +134,29 @@ class TestNormalizeStatName:
 
     def test_unknown_name_is_slugified(self):
         assert normalize_stat_name(" Total Points Won % ") == "total_points_won_pct"
+
+
+class TestParseEventDatetime:
+    def test_berlin_summer_time_is_converted_to_utc(self):
+        # finale de Wimbledon 2026 (match 32529): 17:10 a Berlin = 15:10 UTC
+        assert parse_event_datetime("2026-07-12", "17:10") == datetime(2026, 7, 12, 15, 10, tzinfo=timezone.utc)
+
+    def test_berlin_winter_time_is_converted_to_utc(self):
+        assert parse_event_datetime("2026-01-25", "09:30") == datetime(2026, 1, 25, 8, 30, tzinfo=timezone.utc)
+
+    def test_result_is_aware_utc(self):
+        assert parse_event_datetime("2026-07-12", "17:10").utcoffset() == timedelta(0)
+
+    def test_missing_time_means_midnight_berlin(self):
+        assert parse_event_datetime("2026-07-12", None) == datetime(2026, 7, 11, 22, 0, tzinfo=timezone.utc)
+        assert parse_event_datetime("2026-07-12", "") == datetime(2026, 7, 11, 22, 0, tzinfo=timezone.utc)
+
+    @pytest.mark.parametrize(("event_date", "event_time"), [(None, "12:00"), ("", None), ("2026-13-01", "12:00")])
+    def test_missing_or_invalid_date(self, event_date, event_time):
+        assert parse_event_datetime(event_date, event_time) is None
+
+    def test_invalid_time(self):
+        assert parse_event_datetime("2026-07-12", "TBA") is None
 
 
 class TestFlattenOdds:

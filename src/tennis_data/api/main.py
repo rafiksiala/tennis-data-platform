@@ -8,7 +8,7 @@ Lancer en local:
 Documentation interactive une fois lance: http://localhost:8000/docs
 """
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,6 +29,7 @@ from tennis_data.api.schemas import (
     TournamentOut,
 )
 from tennis_data.models import Match, MatchStatistic, OddsSnapshot, Player, RankingSnapshot, Tournament
+from tennis_data.monitoring import FreshnessCache
 
 app = FastAPI(title="Tennis Data API", version="0.1.0")
 
@@ -47,9 +48,22 @@ app.add_middleware(
 )
 
 
+def _utc_midnight(day: date) -> datetime:
+    """Les filtres par jour de /matches decoupent en jours UTC (ADR-0003), explicitement:
+    sans fuseau, Postgres interpreterait la borne dans le fuseau de la session."""
+    return datetime.combine(day, time.min, tzinfo=timezone.utc)
+
+
+_freshness = FreshnessCache(ttl=timedelta(minutes=5))
+
+
 @app.get("/health")
-def health():
-    return {"status": "ok"}
+def health(db: Session = Depends(get_db)):
+    """Toujours 200 tant que l'API tourne: Render s'en sert comme sonde de vie, et des
+    donnees perimees (base gelee volontairement) ne doivent pas faire redemarrer le
+    service. La fraicheur est dans `data` (`stale` = un circuit n'a pas ete synchronise
+    depuis plus de 36 h), recalculee au plus toutes les 5 minutes."""
+    return {"status": "ok", "data": _freshness.get(db)}
 
 
 @app.get("/matches", response_model=MatchListOut)
@@ -78,13 +92,13 @@ def list_matches(
 
     if date_filter:
         query = query.filter(
-            Match.scheduled_at >= datetime.combine(date_filter, datetime.min.time()),
-            Match.scheduled_at < datetime.combine(date_filter + timedelta(days=1), datetime.min.time()),
+            Match.scheduled_at >= _utc_midnight(date_filter),
+            Match.scheduled_at < _utc_midnight(date_filter + timedelta(days=1)),
         )
     if date_from:
-        query = query.filter(Match.scheduled_at >= datetime.combine(date_from, datetime.min.time()))
+        query = query.filter(Match.scheduled_at >= _utc_midnight(date_from))
     if date_to:
-        query = query.filter(Match.scheduled_at < datetime.combine(date_to + timedelta(days=1), datetime.min.time()))
+        query = query.filter(Match.scheduled_at < _utc_midnight(date_to + timedelta(days=1)))
     if status:
         query = query.filter(Match.status == status)
     if round_code:

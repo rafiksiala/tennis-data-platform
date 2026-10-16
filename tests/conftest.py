@@ -16,6 +16,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
+from tennis_data.db import CONNECT_ARGS
 from tennis_data.models import Base
 
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
@@ -37,7 +38,7 @@ def db_engine():
     url = _test_database_url()
     if url is None:
         pytest.skip("TEST_DATABASE_URL non defini: tests base de donnees ignores")
-    engine = create_engine(url)
+    engine = create_engine(url, connect_args=CONNECT_ARGS)
     # sans effet si `alembic upgrade head` a deja cree le schema (cas de la CI)
     Base.metadata.create_all(engine)
     yield engine

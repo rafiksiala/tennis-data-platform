@@ -7,7 +7,12 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from tennis_data.config import DATABASE_URL
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+# Session Postgres en UTC quel que soit le reglage du serveur (ADR-0003): les timestamptz
+# reviennent en UTC (donc serialises en "...Z" par l'API) et une valeur sans fuseau est lue
+# comme de l'UTC.
+CONNECT_ARGS = {"options": "-c timezone=UTC"}
+
+engine = create_engine(DATABASE_URL, pool_pre_ping=True, connect_args=CONNECT_ARGS)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 

@@ -6,7 +6,8 @@ est negligeable, pas besoin de complexifier avec une table materialisee pour l'i
 Chaque fonction accepte un parametre `as_of`: la date jusqu'a laquelle regarder (tout
 ce qui vient apres est ignore). Concu des le depart pour le backtesting a venir (etape
 14 du plan initial) - "ce qu'on savait avant un match donne" sans dupliquer cette
-logique plus tard. Par defaut, as_of = maintenant.
+logique plus tard. Par defaut, as_of = maintenant. Un as_of sans fuseau est lu comme
+de l'UTC (ADR-0003): avant le 2026-10-16 il faisait planter le calcul (review 3.6).
 """
 
 from collections.abc import Sequence
@@ -18,6 +19,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from tennis_data.models import Match, Tournament
+from tennis_data.timeutil import as_utc
 
 MAX_MATCHES_LOOKBACK = 200  # large marge au-dessus de toutes les fenetres calculees ici
 
@@ -65,7 +67,7 @@ class FormMatch(Protocol):
 
 
 def compute_player_form(session: Session, player_id: int, as_of: datetime | None = None) -> PlayerForm:
-    as_of = as_of or datetime.now(timezone.utc)
+    as_of = as_utc(as_of) if as_of else datetime.now(timezone.utc)
 
     rows = (
         session.query(Match.scheduled_at, Match.winner_id, Tournament.surface)
@@ -86,6 +88,7 @@ def compute_player_form(session: Session, player_id: int, as_of: datetime | None
 def summarize_form(player_id: int, as_of: datetime, rows: Sequence[FormMatch]) -> PlayerForm:
     """Partie pure du calcul (sans base): `rows` = matchs termines du joueur avant as_of,
     du plus recent au plus ancien, comme les renvoie compute_player_form."""
+    as_of = as_utc(as_of)
     last_n: dict[int, tuple[int, int]] = {}
     for n in (10, 20, 30):
         subset = rows[:n]

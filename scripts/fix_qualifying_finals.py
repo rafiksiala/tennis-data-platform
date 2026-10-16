@@ -17,7 +17,7 @@ Usage:
 from sqlalchemy import text
 
 from tennis_data.db import get_session
-from tennis_data.ingest.maintenance import reclassify_stale_qualifying_finals
+from tennis_data.ingest.maintenance import relabel_finals
 
 
 def main():
@@ -25,11 +25,12 @@ def main():
         before = session.execute(text("select count(*) from matches where round_code = 'F'")).scalar()
         print(f"{before} matchs actuellement en round_code='F' (avant correction)")
 
-        n_fixed = reclassify_stale_qualifying_finals(session)
+        finals = relabel_finals(session)
 
         after = session.execute(text("select count(*) from matches where round_code = 'F'")).scalar()
 
-    print(f"{n_fixed} matchs reclasses de 'F' vers 'Q-F' (finales de qualifs mal etiquetees)")
+    print(f"{finals.demoted} matchs reclasses de 'F' vers 'Q-F' (finales de qualifs mal etiquetees)")
+    print(f"{finals.promoted} matchs reclasses de 'Q-F' vers 'F' (vraies finales)")
     print(f"{after} matchs restent en round_code='F' (vraies finales)")
 
 

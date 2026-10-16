@@ -12,7 +12,7 @@ Regroupe tout ce qui a ete confirme par test le 2026-08-08 (voir tennis-data-res
 
 import time
 from collections.abc import Iterator
-from datetime import datetime, timedelta
+from datetime import date, timedelta
 from typing import Any
 
 import requests
@@ -75,8 +75,8 @@ class ApiTennisClient:
 
     @staticmethod
     def _date_chunks(date_start: str, date_stop: str, max_days: int = MAX_DAYS_PER_CALL) -> Iterator[tuple[str, str]]:
-        start = datetime.strptime(date_start, "%Y-%m-%d").date()
-        stop = datetime.strptime(date_stop, "%Y-%m-%d").date()
+        start = date.fromisoformat(date_start)
+        stop = date.fromisoformat(date_stop)
         cur = start
         while cur <= stop:
             chunk_end = min(cur + timedelta(days=max_days - 1), stop)
