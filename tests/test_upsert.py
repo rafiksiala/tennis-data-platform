@@ -69,9 +69,12 @@ class TestScheduledAtIsUtc:
         stored = reload(db_session, cache.match_ids["9001"])
         assert stored.scheduled_at == datetime(2026, 1, 20, 9, 30, tzinfo=timezone.utc)  # 10:30 a Berlin (hiver)
 
-    def test_upsert_is_idempotent(self, db_session):
+    def test_rerun_updates_the_same_match(self, db_session):
         first = upsert_match_from_fixture(db_session, fixture())
         db_session.flush()
+        # nouveau run du job = etat recharge depuis la base. NB: deux upserts du meme match
+        # dans UNE session dupliquent les sets (match.sets reste en cache) - suivi a part.
+        db_session.expire_all()
         second = upsert_match_from_fixture(db_session, fixture(event_time="18:30"))
         db_session.flush()
 
