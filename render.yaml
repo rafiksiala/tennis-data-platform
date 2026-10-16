@@ -1,0 +1,103 @@
+# Blueprint Render: les services actuels decrits en code (infrastructure as code).
+#
+# BROUILLON. Reconstitue depuis le README, pas depuis le tableau de bord Render: chaque
+# "TODO(Rafik)" est une valeur a verifier dans le dashboard avant de creer un Blueprint.
+# Tant qu'aucun Blueprint n'est cree dans Render a partir de ce fichier, il n'a AUCUN effet.
+#
+# Volontairement absent:
+# - la base Postgres (pas de section `databases:`): un Blueprint pourrait sinon en creer
+#   une nouvelle a cote de la base existante. DATABASE_URL est saisi a la main (sync: false).
+# - les secrets: `sync: false` = valeur saisie dans le dashboard, jamais dans le depot.
+#
+# A verifier avant de synchroniser: la base est gelee et les 3 crons sont suspendus
+# (ingestion en pause, 2026-10-16). Verifier qu'une synchro de Blueprint ne les reactive pas.
+
+services:
+  # --- API (FastAPI) ---------------------------------------------------------
+  - type: web
+    name: tennis-data-platform # TODO(Rafik): nom exact (l'URL est tennis-data-platform.onrender.com)
+    runtime: python
+    plan: free # TODO(Rafik)
+    region: frankfurt # TODO(Rafik)
+    branch: main
+    # requirements.txt (genere par uv export) installe aussi le paquet tennis_data (-e .)
+    buildCommand: pip install -r requirements.txt
+    # TODO(Rafik): commande actuelle exacte (probablement avec --app-dir src, plus necessaire)
+    startCommand: uvicorn tennis_data.api.main:app --host 0.0.0.0 --port $PORT
+    # /health renvoie 200 tant que l'API tourne, meme avec des donnees perimees
+    healthCheckPath: /health
+    # TODO(Rafik): "checksPass" pour ne deployer qu'une fois la CI verte
+    autoDeployTrigger: commit
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7" # TODO(Rafik): valeur actuelle (runtime.txt dit 3.12.7)
+      - key: DATABASE_URL
+        sync: false
+
+  # --- Application web (Vite, site statique) ---------------------------------
+  - type: web
+    name: tennis-data-platform-web # TODO(Rafik): nom exact (l'URL est tennis-data-platform-gby1.onrender.com)
+    runtime: static
+    branch: main
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    # VITE_API_URL vient de frontend/.env.production (dans le depot)
+    autoDeployTrigger: commit
+    routes:
+      # BrowserRouter: toute URL profonde (/matches/123, /players/45) doit servir index.html
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  # --- Jobs d'ingestion (suspendus tant que la base est gelee) ---------------
+  - type: cron
+    name: daily-sync
+    runtime: python
+    plan: starter # TODO(Rafik)
+    region: frankfurt # TODO(Rafik)
+    branch: main
+    schedule: "0 6 * * *" # 06:00 UTC: matchs de J-14 a J+5
+    buildCommand: pip install -r requirements.txt
+    startCommand: python scripts/daily_sync.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7" # TODO(Rafik)
+      - key: DATABASE_URL
+        sync: false
+      - key: API_TENNIS_KEY
+        sync: false
+
+  - type: cron
+    name: upcoming-odds
+    runtime: python
+    plan: starter # TODO(Rafik)
+    region: frankfurt # TODO(Rafik)
+    branch: main
+    schedule: "0 7 * * *" # 07:00 UTC: snapshots de cotes ATP/WTA a venir et tout juste termines
+    buildCommand: pip install -r requirements.txt
+    startCommand: python scripts/sync_odds.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7" # TODO(Rafik)
+      - key: DATABASE_URL
+        sync: false
+      - key: API_TENNIS_KEY
+        sync: false
+
+  - type: cron
+    name: rankings
+    runtime: python
+    plan: starter # TODO(Rafik)
+    region: frankfurt # TODO(Rafik)
+    branch: main
+    schedule: "0 8 * * 1" # lundi 08:00 UTC: classements ATP/WTA
+    buildCommand: pip install -r requirements.txt
+    startCommand: python scripts/capture_rankings.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7" # TODO(Rafik)
+      - key: DATABASE_URL
+        sync: false
+      - key: API_TENNIS_KEY
+        sync: false
