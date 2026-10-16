@@ -9,8 +9,10 @@ ce qui vient apres est ignore). Concu des le depart pour le backtesting a venir 
 logique plus tard. Par defaut, as_of = maintenant.
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from typing import Protocol
 
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -54,6 +56,14 @@ class PlayerForm:
         return wins / matches if matches else None
 
 
+class FormMatch(Protocol):
+    """Ce dont summarize_form a besoin pour un match (une ligne de la requete, ou un objet de test)."""
+
+    scheduled_at: datetime
+    winner_id: int | None
+    surface: str | None
+
+
 def compute_player_form(session: Session, player_id: int, as_of: datetime | None = None) -> PlayerForm:
     as_of = as_of or datetime.now(timezone.utc)
 
@@ -70,7 +80,12 @@ def compute_player_form(session: Session, player_id: int, as_of: datetime | None
         .limit(MAX_MATCHES_LOOKBACK)
         .all()
     )
+    return summarize_form(player_id, as_of, rows)
 
+
+def summarize_form(player_id: int, as_of: datetime, rows: Sequence[FormMatch]) -> PlayerForm:
+    """Partie pure du calcul (sans base): `rows` = matchs termines du joueur avant as_of,
+    du plus recent au plus ancien, comme les renvoie compute_player_form."""
     last_n: dict[int, tuple[int, int]] = {}
     for n in (10, 20, 30):
         subset = rows[:n]
