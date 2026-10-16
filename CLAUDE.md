@@ -17,7 +17,7 @@ uv run pytest                            # tests (DB tests are skipped without T
 uv run ruff check . && uv run ruff format --check .
 uv run uvicorn tennis_data.api.main:app --reload   # API on :8000, docs at /docs
 uv run alembic upgrade head              # apply migrations to DATABASE_URL
-cd frontend && npm ci && npx tsc -b && npm run lint
+cd frontend && npm ci && npx tsc -b && npm run lint && npm test
 ```
 
 - After changing dependencies in `pyproject.toml`: `uv lock`, then

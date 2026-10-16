@@ -3,7 +3,7 @@ import { useMatches } from '../api/hooks'
 import { FilterBar } from '../components/FilterBar'
 import { TournamentGroup } from '../components/TournamentGroup'
 import { PlayerSearch } from '../components/PlayerSearch'
-import { toDateStr } from '../lib/date'
+import { localDayBounds, toDateStr } from '../lib/date'
 import type { MatchOut } from '../api/types'
 
 function groupByTournament(matches: MatchOut[]): MatchOut[][] {
@@ -24,8 +24,9 @@ export function CalendarPage() {
   const [tour, setTour] = useState('')
   const [status, setStatus] = useState('')
 
+  // le jour local du visiteur, pas le jour UTC qu'un ?date= nu donnerait (ADR-0003)
   const { data, isLoading, isError, isPlaceholderData } = useMatches({
-    date,
+    ...localDayBounds(date),
     tour: tour || undefined,
     status: status || undefined,
     limit: 200,
