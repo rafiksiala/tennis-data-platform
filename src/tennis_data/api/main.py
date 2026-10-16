@@ -30,6 +30,7 @@ from tennis_data.api.schemas import (
 )
 from tennis_data.models import Match, MatchStatistic, OddsSnapshot, Player, RankingSnapshot, Tournament
 from tennis_data.monitoring import FreshnessCache
+from tennis_data.timeutil import as_utc
 
 app = FastAPI(title="Tennis Data API", version="0.1.0")
 
@@ -72,6 +73,12 @@ def list_matches(
     date_filter: date | None = Query(None, alias="date", description="Un seul jour, format YYYY-MM-DD"),
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
+    from_: datetime | None = Query(
+        None,
+        alias="from",
+        description="Instant de debut (inclus), ISO 8601, ex: 2026-07-01T04:00:00Z. Sans fuseau = UTC",
+    ),
+    to: datetime | None = Query(None, description="Instant de fin (exclu), meme format que `from`"),
     tour: str | None = Query(None, description="atp | wta | challenger_men | challenger_women | itf_men | itf_women"),
     surface: str | None = Query(None),
     round_code: str | None = Query(None),
@@ -82,6 +89,14 @@ def list_matches(
     limit: int = Query(50, le=200),
     offset: int = Query(0, ge=0),
 ):
+    """`date`, `date_from` et `date_to` decoupent en jours UTC. Pour le jour local d'un
+    visiteur (ADR-0003), le client calcule son minuit -> minuit en instants UTC et passe
+    `from` / `to` (intervalle [from, to[). Tous les filtres se combinent (ET)."""
+    start = as_utc(from_) if from_ is not None else None
+    end = as_utc(to) if to is not None else None
+    if start is not None and end is not None and end <= start:
+        raise HTTPException(status_code=422, detail="`to` doit etre strictement apres `from`")
+
     # Pas de joinedload ici: .count() n'a pas besoin des jointures (chaque match a
     # exactement un tournoi/player1/player2, donc ca ne change pas le compte), mais
     # SQLAlchemy les inclut quand meme dans la requete de comptage si on les a ajoutees
@@ -99,6 +114,10 @@ def list_matches(
         query = query.filter(Match.scheduled_at >= _utc_midnight(date_from))
     if date_to:
         query = query.filter(Match.scheduled_at < _utc_midnight(date_to + timedelta(days=1)))
+    if start is not None:
+        query = query.filter(Match.scheduled_at >= start)
+    if end is not None:
+        query = query.filter(Match.scheduled_at < end)
     if status:
         query = query.filter(Match.status == status)
     if round_code:
