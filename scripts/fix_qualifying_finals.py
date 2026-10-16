@@ -1,4 +1,7 @@
 """
+Remplace par `scripts/repair_data.py finals` (simulation par defaut, voir
+docs/runbooks/data-repair-2026-10.md): ce script-ci ECRIT directement, sans simulation.
+
 Correction ponctuelle (deja executee une fois le 2026-08-13, gardee pour reference et
 pour permettre une reverification manuelle a tout moment). La meme logique tourne
 maintenant automatiquement a chaque daily_sync (voir tennis_data/ingest/maintenance.py).

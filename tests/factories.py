@@ -4,7 +4,8 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from tennis_data.models import Match, Player, Tournament
+from tennis_data.ingest.mapping import SOURCE
+from tennis_data.models import Match, Player, Tournament, TournamentExternalId
 
 
 def make_player(session: Session, name: str = "Test Player") -> Player:
@@ -45,3 +46,11 @@ def make_match(
     session.add(match)
     session.flush()
     return match
+
+
+def make_edition(session: Session, series_key: str, season: int, **fields) -> Tournament:
+    """Edition telle que l'ingestion la cree: tournoi + cle externe {series_key}_{season}."""
+    tournament = make_tournament(session, external_series_key=series_key, season=season, **fields)
+    session.add(TournamentExternalId(tournament_id=tournament.id, source=SOURCE, external_id=f"{series_key}_{season}"))
+    session.flush()
+    return tournament
