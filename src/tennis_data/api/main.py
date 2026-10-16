@@ -8,7 +8,7 @@ Lancer en local:
 Documentation interactive une fois lance: http://localhost:8000/docs
 """
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,6 +47,12 @@ app.add_middleware(
 )
 
 
+def _utc_midnight(day: date) -> datetime:
+    """Les filtres par jour de /matches decoupent en jours UTC (ADR-0003), explicitement:
+    sans fuseau, Postgres interpreterait la borne dans le fuseau de la session."""
+    return datetime.combine(day, time.min, tzinfo=timezone.utc)
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -78,13 +84,13 @@ def list_matches(
 
     if date_filter:
         query = query.filter(
-            Match.scheduled_at >= datetime.combine(date_filter, datetime.min.time()),
-            Match.scheduled_at < datetime.combine(date_filter + timedelta(days=1), datetime.min.time()),
+            Match.scheduled_at >= _utc_midnight(date_filter),
+            Match.scheduled_at < _utc_midnight(date_filter + timedelta(days=1)),
         )
     if date_from:
-        query = query.filter(Match.scheduled_at >= datetime.combine(date_from, datetime.min.time()))
+        query = query.filter(Match.scheduled_at >= _utc_midnight(date_from))
     if date_to:
-        query = query.filter(Match.scheduled_at < datetime.combine(date_to + timedelta(days=1), datetime.min.time()))
+        query = query.filter(Match.scheduled_at < _utc_midnight(date_to + timedelta(days=1)))
     if status:
         query = query.filter(Match.status == status)
     if round_code:

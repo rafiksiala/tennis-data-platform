@@ -68,6 +68,14 @@ class TestSummarizeForm:
         form = summarize_form(PLAYER, AS_OF, rows)
         assert (form.streak_type, form.streak_count) == ("L", 2)
 
+    def test_naive_as_of_is_read_as_utc(self):
+        # review 3.6: un as_of sans fuseau faisait planter la soustraction avec des heures aware
+        form = summarize_form(PLAYER, AS_OF.replace(tzinfo=None), [played(2, True), played(40, False)])
+        assert form.as_of == AS_OF
+        assert form.as_of.tzinfo is timezone.utc
+        assert form.days_since_last_match == 2
+        assert form.window_months[3] == (1, 2)
+
     def test_rest_and_workload(self):
         rows = [played(4.5, True), played(29, True), played(31, False)]
         form = summarize_form(PLAYER, AS_OF, rows)
@@ -111,3 +119,14 @@ class TestComputePlayerForm:
         assert body["matches_considered"] == 1
         assert body["win_rate_last_10"] == 1.0
         assert body["streak_type"] == "W"
+
+    @pytest.mark.parametrize("as_of", ["2026-07-01T00:00:00", "2026-07-01T02:00:00+02:00"])
+    def test_form_endpoint_accepts_naive_or_offset_as_of(self, db_session, api_client, as_of):
+        player, opponent = make_player(db_session, "Player"), make_player(db_session, "Opponent")
+        make_match(db_session, make_tournament(db_session), AS_OF - timedelta(days=1), player, opponent, winner=player)
+
+        response = api_client.get(f"/players/{player.id}/form", params={"as_of": as_of})
+
+        assert response.status_code == 200  # 500 avant le correctif pour la version naive
+        assert response.json()["as_of"] == "2026-07-01T00:00:00Z"
+        assert response.json()["matches_considered"] == 1
