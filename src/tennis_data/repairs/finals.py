@@ -1,5 +1,5 @@
 """
-Reparation 3/3: reetiquetage F / Q-F de toutes les editions avec la regle corrigee
+Reparation 3/4: reetiquetage F / Q-F de toutes les editions avec la regle corrigee
 ("la vraie finale est le dernier match de son edition", ingest/maintenance.py, review 3.4).
 
 La regle compare chaque finale au dernier match de son edition: elle suppose des

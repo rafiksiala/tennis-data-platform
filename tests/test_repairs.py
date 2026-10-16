@@ -7,7 +7,7 @@ from factories import make_edition, make_match, make_tournament
 from sqlalchemy import text
 
 from tennis_data.models import Match, Tournament, TournamentExternalId
-from tennis_data.repairs import editions, finals, scheduled_at_utc
+from tennis_data.repairs import editions, finals, qualifying_rounds, scheduled_at_utc
 from tennis_data.repairs.markers import RepairRefused, applied_at, record_applied
 
 pytestmark = pytest.mark.db
@@ -229,15 +229,50 @@ class TestFinals:
         assert finals.preview(db_session) == []
 
 
+class TestQualifyingRounds:
+    def test_requires_the_finals_repair(self, db_session):
+        record_applied(db_session, editions.NAME, 0)
+        with pytest.raises(RepairRefused, match="finals"):
+            qualifying_rounds.apply(db_session)
+
+    def test_preview_and_apply(self, db_session):
+        edition = make_edition(db_session, "1217", 2026, name="US Open")
+        qual_semi = make_match(db_session, edition, utc(2026, 8, 20, 12, 0), round_code="SF")
+        make_match(db_session, edition, utc(2026, 8, 24, 15, 0), round_code="R128")
+
+        assert qualifying_rounds.preview(db_session) == [
+            {
+                "tournament_id": edition.id,
+                "name": "US Open",
+                "tour": "atp",
+                "season": 2026,
+                "demoted": 1,
+                "promoted": 0,
+            }
+        ]
+
+        record_applied(db_session, finals.NAME, 0)
+        result = qualifying_rounds.apply(db_session)
+
+        assert (result.demoted, result.promoted) == (1, 0)
+        db_session.expire_all()
+        assert db_session.get(Match, qual_semi.id).round_code == "Q-SF"
+        assert qualifying_rounds.preview(db_session) == []
+        assert applied_at(db_session, qualifying_rounds.NAME) is not None
+
+
 def test_previews_run_in_a_read_only_transaction(db_session):
     """La simulation de scripts/repair_data.py tourne en SET TRANSACTION READ ONLY:
     aucune des previews ne doit tenter d'ecrire."""
     edition = make_edition(db_session, "1217", 2025)
     make_match(db_session, edition, utc(2026, 9, 1, 16, 0), round_code="F", last_synced_at=BEFORE_FREEZE)
     make_match(db_session, edition, utc(2026, 9, 2, 16, 0), round_code="F", last_synced_at=BEFORE_FREEZE)
+    make_match(db_session, edition, utc(2026, 8, 31, 16, 0), round_code="SF", last_synced_at=BEFORE_FREEZE)
+    make_match(db_session, edition, utc(2026, 9, 3, 16, 0), round_code="R32", last_synced_at=BEFORE_FREEZE)
 
     db_session.execute(text("SET TRANSACTION READ ONLY"))
 
-    assert scheduled_at_utc.preview(db_session).to_shift == 2
+    assert scheduled_at_utc.preview(db_session).to_shift == 4
     assert len(editions.plan(db_session).fixes) == 1
     assert len(finals.preview(db_session)) == 1
+    assert len(qualifying_rounds.preview(db_session)) == 1

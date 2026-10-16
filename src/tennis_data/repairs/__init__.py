@@ -5,6 +5,7 @@ scripts/repair_data.py, dans l'ordre:
 1. scheduled_at_utc: heures de Berlin stockees comme de l'UTC -> vrai UTC (ADR-0003)
 2. editions: matchs rattaches a la mauvaise edition (saison du fournisseur fausse)
 3. finals: reetiquetage F / Q-F avec la regle "la vraie finale est le dernier match"
+4. qualifying_rounds: reetiquetage QF/SF -> Q-QF/Q-SF des qualifs ("avant le premier R16")
 
 Chaque module expose preview() (lecture seule) et apply() (ecrit, dans la transaction de
 l'appelant). Chaque apply() reussi laisse une trace dans ingest_runs (job_name

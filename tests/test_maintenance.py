@@ -1,11 +1,16 @@
-"""Reetiquetage des finales (ingest/maintenance.py), contre Postgres."""
+"""Reetiquetages des finales et des QF/SF de qualifs (ingest/maintenance.py), contre Postgres."""
 
 from datetime import datetime, timedelta, timezone
 
 import pytest
 from factories import make_match, make_tournament
 
-from tennis_data.ingest.maintenance import preview_finals_relabel, relabel_finals
+from tennis_data.ingest.maintenance import (
+    preview_finals_relabel,
+    preview_qualifying_relabel,
+    relabel_finals,
+    relabel_qualifying_rounds,
+)
 
 pytestmark = pytest.mark.db
 
@@ -100,3 +105,129 @@ def test_is_idempotent(db_session):
     assert relabel_finals(db_session).total == 3
     assert relabel_finals(db_session).total == 0
     assert preview_finals_relabel(db_session) == []
+
+
+# --- QF/SF de qualifs -------------------------------------------------------------------
+
+
+def day(d: int, hour: int = 12, minute: int = 0) -> datetime:
+    """Jour d'un US Open fictif: qualifs du 1 au 4 aout, tableau a partir du 6."""
+    return datetime(2026, 8, d, hour, minute, tzinfo=timezone.utc)
+
+
+def test_qualifying_quarters_and_semis_before_the_main_draw_are_relabeled(db_session):
+    # qualifs de Grand Chelem Q1/Q2 telles que livrees sans event_qualification: 'QF'/'SF'
+    edition = make_tournament(db_session)
+    q1 = make_match(db_session, edition, day(1), round_code="QF")
+    q2 = make_match(db_session, edition, day(3), round_code="SF")
+    make_match(db_session, edition, day(6), round_code="R128")
+    make_match(db_session, edition, day(10), round_code="R16")
+    real_qf = make_match(db_session, edition, day(12), round_code="QF")
+    real_sf = make_match(db_session, edition, day(14), round_code="SF")
+
+    result = relabel_qualifying_rounds(db_session)
+
+    assert codes(db_session, [q1, q2, real_qf, real_sf]) == ["Q-QF", "Q-SF", "QF", "SF"]
+    assert (result.demoted, result.promoted) == (2, 0)
+
+
+def test_qualifying_semi_scheduled_after_the_first_main_draw_match(db_session):
+    # Bordeaux 2022: 1er tour de qualifs programme 30 min apres le premier R32, le meme jour
+    edition = make_tournament(db_session)
+    make_match(db_session, edition, day(6, 13, 15), round_code="R32")
+    qualifying = make_match(db_session, edition, day(6, 13, 45), round_code="SF")
+    make_match(db_session, edition, day(8), round_code="R16")
+
+    relabel_qualifying_rounds(db_session)
+
+    assert codes(db_session, [qualifying]) == ["Q-SF"]
+
+
+def test_in_progress_edition_without_r16_uses_the_first_round(db_session):
+    # US Open 2026 gele avant le R16 (tournoi 2203): 2 'SF' de qualifs avant le R128
+    edition = make_tournament(db_session)
+    qualifying = make_match(db_session, edition, day(3), round_code="SF")
+    make_match(db_session, edition, day(6), round_code="R128")
+
+    relabel_qualifying_rounds(db_session)
+
+    assert codes(db_session, [qualifying]) == ["Q-SF"]
+
+
+def test_edition_without_elimination_rounds_is_left_alone(db_session):
+    # Masters de fin d'annee: round robin (round_code NULL), puis SF et F
+    edition = make_tournament(db_session, name="Finals - Turin")
+    make_match(db_session, edition, day(1), round_code=None)
+    semis = [make_match(db_session, edition, day(6, hour), round_code="SF") for hour in (14, 19)]
+
+    assert relabel_qualifying_rounds(db_session).total == 0
+    assert codes(db_session, semis) == ["SF", "SF"]
+
+
+def test_heuristic_q_sf_after_the_main_draw_start_becomes_sf_again(db_session):
+    edition = make_tournament(db_session)
+    make_match(db_session, edition, day(6), round_code="R32")
+    make_match(db_session, edition, day(8), round_code="R16")
+    real_sf = make_match(db_session, edition, day(12), round_code="Q-SF", is_qualification=False)
+
+    result = relabel_qualifying_rounds(db_session)
+
+    assert codes(db_session, [real_sf]) == ["SF"]
+    assert (result.demoted, result.promoted) == (0, 1)
+
+
+def test_provider_flagged_matches_are_neither_touched_nor_anchors(db_session):
+    edition = make_tournament(db_session)
+    flagged = make_match(db_session, edition, day(12), round_code="Q-SF", is_qualification=True)
+    make_match(db_session, edition, day(1), round_code="R32", is_qualification=True)  # pas un repere
+    make_match(db_session, edition, day(6), round_code="R32")
+    unflagged = make_match(db_session, edition, day(5), round_code="SF")
+
+    relabel_qualifying_rounds(db_session)
+
+    assert codes(db_session, [flagged, unflagged]) == ["Q-SF", "Q-SF"]
+
+
+def test_lower_rounds_and_finals_are_not_this_rule(db_session):
+    edition = make_tournament(db_session)
+    qualifying_final = make_match(db_session, edition, day(4), round_code="F")  # relabel_finals s'en charge
+    make_match(db_session, edition, day(6), round_code="R32")
+    r16 = make_match(db_session, edition, day(8), round_code="R16")
+
+    assert relabel_qualifying_rounds(db_session).total == 0
+    assert codes(db_session, [qualifying_final, r16]) == ["F", "R16"]
+
+
+def test_qualifying_editions_are_independent(db_session):
+    early = make_tournament(db_session, season=2025)
+    make_match(db_session, early, day(1) - timedelta(days=365), round_code="R32")
+    late = make_tournament(db_session, season=2026)
+    qualifying = make_match(db_session, late, day(3), round_code="SF")  # apres le R32 de l'autre edition
+    make_match(db_session, late, day(6), round_code="R32")
+
+    relabel_qualifying_rounds(db_session)
+
+    assert codes(db_session, [qualifying]) == ["Q-SF"]
+
+
+def test_qualifying_preview_lists_changes_without_writing(db_session):
+    edition = make_tournament(db_session)
+    qualifying = make_match(db_session, edition, day(3), round_code="SF")
+    make_match(db_session, edition, day(6), round_code="R32")
+    real_sf = make_match(db_session, edition, day(12), round_code="SF")
+
+    preview = preview_qualifying_relabel(db_session)
+
+    assert [(row["id"], row["old_code"], row["new_code"]) for row in preview] == [(qualifying.id, "SF", "Q-SF")]
+    assert codes(db_session, [qualifying, real_sf]) == ["SF", "SF"]
+
+
+def test_qualifying_relabel_is_idempotent(db_session):
+    edition = make_tournament(db_session)
+    for hour in (10, 12, 14):
+        make_match(db_session, edition, day(3, hour), round_code="SF")
+    make_match(db_session, edition, day(6), round_code="R32")
+
+    assert relabel_qualifying_rounds(db_session).total == 3
+    assert relabel_qualifying_rounds(db_session).total == 0
+    assert preview_qualifying_relabel(db_session) == []

@@ -1,5 +1,5 @@
 """
-Reparation 1/3: matches.scheduled_at contient l'heure de Berlin du fournisseur stockee
+Reparation 1/4: matches.scheduled_at contient l'heure de Berlin du fournisseur stockee
 comme si c'etait de l'UTC (review 3.5, ADR-0003). On la relit comme une heure de Berlin
 et on la convertit en vrai UTC: 17:10Z (finale de Wimbledon 2026, match 32529) -> 15:10Z.
 

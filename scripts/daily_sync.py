@@ -17,7 +17,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from tennis_data.db import get_session
 from tennis_data.ingest.enrich import build_surface_lookup
-from tennis_data.ingest.maintenance import relabel_finals
+from tennis_data.ingest.maintenance import relabel_finals, relabel_qualifying_rounds
 from tennis_data.ingest.upsert import upsert_match_from_fixture
 from tennis_data.models import IngestRun
 from tennis_data.providers.api_tennis import EVENT_TYPES, ApiTennisClient, ApiTennisQuotaExceeded
@@ -95,6 +95,14 @@ def main():
             print(f"  finales reetiquetees: {finals.demoted} F -> Q-F, {finals.promoted} Q-F -> F")
     except Exception as exc:  # noqa: BLE001 - ne doit pas faire echouer tout le sync
         print(f"  (reetiquetage des finales echoue: {exc})")
+
+    try:
+        with get_session() as session:
+            qualifying = relabel_qualifying_rounds(session)
+        if qualifying.total:
+            print(f"  QF/SF de qualifs reetiquetes: {qualifying.demoted} -> Q-QF/Q-SF, {qualifying.promoted} -> QF/SF")
+    except Exception as exc:  # noqa: BLE001 - ne doit pas faire echouer tout le sync
+        print(f"  (reetiquetage des QF/SF de qualifs echoue: {exc})")
 
     print(f"Termine: {total} matchs synchronises (crees ou mis a jour), {calls} appels API")
 

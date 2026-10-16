@@ -5,6 +5,7 @@ A lancer dans cet ordre (chaque etape refuse de s'appliquer si la precedente ne 
     python scripts/repair_data.py scheduled-at-utc   # 1. heures de Berlin -> vrai UTC
     python scripts/repair_data.py editions           # 2. matchs rattaches a la bonne edition
     python scripts/repair_data.py finals             # 3. reetiquetage F / Q-F
+    python scripts/repair_data.py qualifying-rounds  # 4. reetiquetage QF/SF -> Q-QF/Q-SF des qualifs
 
 Ajouter --apply pour ecrire (une seule transaction, confirmation demandee). Mode d'emploi
 complet, sauvegarde prealable et requetes de verification: docs/runbooks/data-repair-2026-10.md.
@@ -20,7 +21,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from tennis_data.db import engine
-from tennis_data.repairs import editions, finals, scheduled_at_utc
+from tennis_data.repairs import editions, finals, qualifying_rounds, scheduled_at_utc
 from tennis_data.repairs.markers import RepairRefused
 from tennis_data.timeutil import as_utc
 
@@ -72,6 +73,15 @@ def _show_finals(session: Session, args) -> None:
         print(f"  #{r['tournament_id']} {r['name']} ({r['tour']} {r['season']}): -{r['demoted']} F, +{r['promoted']} F")
 
 
+def _show_qualifying_rounds(session: Session, args) -> None:
+    rows = qualifying_rounds.preview(session)
+    demoted, promoted = sum(r["demoted"] for r in rows), sum(r["promoted"] for r in rows)
+    print(f"{demoted} QF/SF -> Q-QF/Q-SF, {promoted} Q-QF/Q-SF -> QF/SF, sur {len(rows)} editions")
+    for r in sorted(rows, key=lambda r: -(r["demoted"] + r["promoted"]))[:TOP]:
+        edition = f"#{r['tournament_id']} {r['name']} ({r['tour']} {r['season']})"
+        print(f"  {edition}: -{r['demoted']} QF/SF, +{r['promoted']} QF/SF")
+
+
 def _apply(session: Session, args) -> None:
     if args.repair == "scheduled-at-utc":
         n = scheduled_at_utc.apply(session, cutoff=args.cutoff, cutoff_is_explicit=args.cutoff_is_explicit)
@@ -79,12 +89,20 @@ def _apply(session: Session, args) -> None:
     elif args.repair == "editions":
         plan = editions.apply(session)
         print(f"{plan.matches_reattached} matchs rattaches ({len(plan.fixes)} corrections)")
-    else:
+    elif args.repair == "finals":
         result = finals.apply(session)
         print(f"{result.demoted} F -> Q-F, {result.promoted} Q-F -> F")
+    else:
+        result = qualifying_rounds.apply(session)
+        print(f"{result.demoted} QF/SF -> Q-QF/Q-SF, {result.promoted} Q-QF/Q-SF -> QF/SF")
 
 
-SHOW = {"scheduled-at-utc": _show_scheduled_at_utc, "editions": _show_editions, "finals": _show_finals}
+SHOW = {
+    "scheduled-at-utc": _show_scheduled_at_utc,
+    "editions": _show_editions,
+    "finals": _show_finals,
+    "qualifying-rounds": _show_qualifying_rounds,
+}
 
 
 def main() -> int:
