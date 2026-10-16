@@ -1,6 +1,6 @@
 """Test de bout en bout sur un tout petit echantillon reel avant de lancer le vrai backfill."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import text
 
@@ -11,7 +11,7 @@ from tennis_data.providers.api_tennis import EVENT_TYPES, ApiTennisClient
 
 def main():
     client = ApiTennisClient()
-    date_stop = datetime.now().date()
+    date_stop = datetime.now(timezone.utc).date()
     date_start = date_stop - timedelta(days=3)
     fixtures = client.get_fixtures_range(str(date_start), str(date_stop), event_type_key=EVENT_TYPES["atp_singles"])
     print(f"{len(fixtures)} fixtures ATP Singles recuperees ({date_start} -> {date_stop})")

@@ -36,7 +36,7 @@ def parse_bday(raw: str | None) -> date | None:
     if not raw:
         return None
     try:
-        return datetime.strptime(raw.strip(), "%d.%m.%Y").date()
+        return datetime.strptime(raw.strip(), "%d.%m.%Y").date()  # noqa: DTZ007 - un jour calendaire, pas un instant
     except ValueError:
         return None
 
