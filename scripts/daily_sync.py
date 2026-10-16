@@ -12,12 +12,8 @@ Usage:
     python scripts/daily_sync.py
 """
 
-import os
-import sys
 import time
 from datetime import datetime, timedelta, timezone
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from tennis_data.db import get_session
 from tennis_data.ingest.enrich import build_surface_lookup

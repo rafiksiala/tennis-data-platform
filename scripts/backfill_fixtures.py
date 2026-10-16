@@ -15,12 +15,8 @@ Usage:
 """
 
 import argparse
-import os
-import sys
 import time
 from datetime import datetime, timezone
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from tennis_data.db import get_session
 from tennis_data.ingest.bulk_upsert import BulkCache, bulk_upsert_fixtures

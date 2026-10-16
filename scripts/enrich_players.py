@@ -21,12 +21,8 @@ Usage:
 """
 
 import argparse
-import os
-import sys
 import time
 from datetime import date, datetime, timedelta, timezone
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from tennis_data.db import get_session
 from tennis_data.ingest.mapping import SOURCE

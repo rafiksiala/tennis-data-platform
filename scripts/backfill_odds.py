@@ -19,12 +19,8 @@ Usage:
 """
 
 import argparse
-import os
-import sys
 import time
 from datetime import datetime, timedelta, timezone
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from sqlalchemy import select
 

@@ -1,10 +1,6 @@
 """Test de bout en bout sur un tout petit echantillon reel avant de lancer le vrai backfill."""
 
-import os
-import sys
 from datetime import datetime, timedelta
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from sqlalchemy import text
 

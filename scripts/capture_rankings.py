@@ -10,11 +10,7 @@ Usage:
     python scripts/capture_rankings.py
 """
 
-import os
-import sys
 from datetime import datetime, timezone
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from tennis_data.db import get_session
 from tennis_data.ingest.upsert import get_or_create_player

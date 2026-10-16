@@ -14,10 +14,6 @@ Usage:
     python scripts/fix_qualifying_finals.py
 """
 
-import os
-import sys
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from sqlalchemy import text
 
