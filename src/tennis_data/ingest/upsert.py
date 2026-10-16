@@ -38,11 +38,7 @@ TOUR_LABELS = {
 
 def get_or_create_player(session: Session, external_id: int | str, name: str | None) -> Player:
     external_id = str(external_id)
-    link = (
-        session.query(PlayerExternalId)
-        .filter_by(source=SOURCE, external_id=external_id)
-        .one_or_none()
-    )
+    link = session.query(PlayerExternalId).filter_by(source=SOURCE, external_id=external_id).one_or_none()
     if link:
         if name and link.player.full_name != name:
             link.player.full_name = name
@@ -66,11 +62,7 @@ def get_or_create_tournament(
     """cle d'upsert composite {tournament_key}_{season}: voir commentaire sur
     Tournament.external_series_key dans models.py pour le raisonnement."""
     composite_id = f"{tournament_key}_{season}"
-    link = (
-        session.query(TournamentExternalId)
-        .filter_by(source=SOURCE, external_id=composite_id)
-        .one_or_none()
-    )
+    link = session.query(TournamentExternalId).filter_by(source=SOURCE, external_id=composite_id).one_or_none()
     if link:
         tournament = link.tournament
         if surface and not tournament.surface:
@@ -139,11 +131,7 @@ def upsert_match_from_fixture(
         except ValueError:
             scheduled_at = None
 
-    link = (
-        session.query(MatchExternalId)
-        .filter_by(source=SOURCE, external_id=str(event_key))
-        .one_or_none()
-    )
+    link = session.query(MatchExternalId).filter_by(source=SOURCE, external_id=str(event_key)).one_or_none()
     match = link.match if link else Match(tournament_id=tournament.id)
 
     match.tournament_id = tournament.id

@@ -83,7 +83,9 @@ class Tournament(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(200))
     tour: Mapped[str] = mapped_column(String(30))  # atp | wta | challenger_men | challenger_women | itf_men | itf_women
-    level: Mapped[str | None] = mapped_column(String(30))  # grand_slam | masters_1000 | 500 | 250 | challenger | itf (rempli progressivement)
+    level: Mapped[str | None] = mapped_column(
+        String(30)
+    )  # grand_slam | masters_1000 | 500 | 250 | challenger | itf (rempli progressivement)
     # cle brute du fournisseur pour la SERIE (ex: "Wimbledon" garde le meme tournament_key
     # d'API-Tennis chaque annee) - permet de regrouper toutes les editions d'un meme tournoi
     # sans avoir besoin d'une table series separee. La cle d'upsert (tournament_external_ids)
@@ -124,7 +126,9 @@ class Match(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     tournament_id: Mapped[int] = mapped_column(ForeignKey("tournaments.id"), index=True)
-    round_raw: Mapped[str | None] = mapped_column(String(255))  # elargi le 2026-08-09: certains libelles Challenger depassaient 50
+    round_raw: Mapped[str | None] = mapped_column(
+        String(255)
+    )  # elargi le 2026-08-09: certains libelles Challenger depassaient 50
     round_code: Mapped[str | None] = mapped_column(String(10))  # R128,R64,R32,R16,QF,SF,F,RR,Q1,Q2,Q3...
 
     player1_id: Mapped[int | None] = mapped_column(ForeignKey("players.id"), index=True)
@@ -138,7 +142,9 @@ class Match(Base):
     scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     score_raw: Mapped[str | None] = mapped_column(String(100))  # elargi le 2026-08-09, meme raison que round_raw
     duration_minutes: Mapped[int | None] = mapped_column()
-    points_raw: Mapped[dict | None] = mapped_column(JSONB)  # point-by-point brut, non modelise relationnellement (cf. ADR dans le chat)
+    points_raw: Mapped[dict | None] = mapped_column(
+        JSONB
+    )  # point-by-point brut, non modelise relationnellement (cf. ADR dans le chat)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -189,9 +195,7 @@ class MatchSet(Base):
 
 class MatchStatistic(Base):
     __tablename__ = "match_statistics"
-    __table_args__ = (
-        UniqueConstraint("match_id", "player_id", "stat_period", "stat_name", name="uq_match_stat"),
-    )
+    __table_args__ = (UniqueConstraint("match_id", "player_id", "stat_period", "stat_name", name="uq_match_stat"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     match_id: Mapped[int] = mapped_column(ForeignKey("matches.id", ondelete="CASCADE"), index=True)
@@ -211,9 +215,7 @@ class MatchStatistic(Base):
 # ---------------------------------------------------------------------------
 class RankingSnapshot(Base):
     __tablename__ = "ranking_snapshots"
-    __table_args__ = (
-        UniqueConstraint("player_id", "tour", "snapshot_date", "source", name="uq_ranking_snapshot"),
-    )
+    __table_args__ = (UniqueConstraint("player_id", "tour", "snapshot_date", "source", name="uq_ranking_snapshot"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     player_id: Mapped[int] = mapped_column(ForeignKey("players.id"), index=True)

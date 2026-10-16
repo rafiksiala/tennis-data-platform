@@ -18,12 +18,8 @@ Usage:
 """
 
 import argparse
-import os
-import sys
 import time
 from datetime import datetime, timedelta, timezone
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from tennis_data.db import get_session
 from tennis_data.ingest.mapping import SOURCE, flatten_odds
@@ -130,7 +126,7 @@ def main():
             print("Arret propre. Le prochain run planifie reprendra le reste.")
             break
         except Exception as exc:  # noqa: BLE001
-            print(f"  lot {i}-{i+len(chunk)}: ECHEC ({exc}), on continue sur le suivant")
+            print(f"  lot {i}-{i + len(chunk)}: ECHEC ({exc}), on continue sur le suivant")
             _log_run_safely(
                 job_name="sync_odds",
                 status="failed",
@@ -142,8 +138,7 @@ def main():
         total_not_found += result["not_found"]
         total_calls += result["calls"]
 
-    print(f"Termine: {total_found} matchs avec cotes capturees, {total_not_found} sans cotes, "
-          f"{total_calls} appels API")
+    print(f"Termine: {total_found} matchs avec cotes capturees, {total_not_found} sans cotes, {total_calls} appels API")
 
 
 if __name__ == "__main__":

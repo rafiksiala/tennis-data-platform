@@ -15,12 +15,8 @@ Usage:
 """
 
 import argparse
-import os
-import sys
 import time
 from datetime import datetime, timezone
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from tennis_data.db import get_session
 from tennis_data.ingest.bulk_upsert import BulkCache, bulk_upsert_fixtures
@@ -72,7 +68,9 @@ def backfill_tour(client: ApiTennisClient, tour_key: str, start: str, end: str, 
 
         year_start = f"{year}-01-01" if year > int(start[:4]) else start
         year_end = f"{year}-12-31" if year < int(end[:4]) else end
-        n_calls = -(-((datetime.strptime(year_end, "%Y-%m-%d") - datetime.strptime(year_start, "%Y-%m-%d")).days + 1) // 7)
+        n_calls = -(
+            -((datetime.strptime(year_end, "%Y-%m-%d") - datetime.strptime(year_start, "%Y-%m-%d")).days + 1) // 7
+        )
 
         last_exc = None
         for attempt in range(1, MAX_ATTEMPTS + 1):
@@ -105,7 +103,9 @@ def backfill_tour(client: ApiTennisClient, tour_key: str, start: str, end: str, 
                     time.sleep(10 * attempt)  # 10s, 20s: laisse le temps a un blip reseau de se resorber
 
         if last_exc is not None:
-            print(f"  [{tour_key}] {year}: ECHEC definitif apres {MAX_ATTEMPTS} tentatives - annee ignoree, on continue")
+            print(
+                f"  [{tour_key}] {year}: ECHEC definitif apres {MAX_ATTEMPTS} tentatives - annee ignoree, on continue"
+            )
             stats["years_failed"].append(year)
             _log_run_safely(
                 job_name=f"backfill_fixtures:{tour_key}:{year}",
@@ -135,12 +135,17 @@ def main():
             stats = backfill_tour(client, tour_key, args.start, args.end, surface_lookup)
         except ApiTennisQuotaExceeded as exc:
             print(f"\nQUOTA API EPUISE ({exc}). Arret propre.")
-            print("Relance le script plus tard (apres reset du quota, ou plan superieur):"
-                  " il reprendra automatiquement la ou il s'est arrete.")
+            print(
+                "Relance le script plus tard (apres reset du quota, ou plan superieur):"
+                " il reprendra automatiquement la ou il s'est arrete."
+            )
             return
         print(f"  Termine: {stats['matches_seen']} matchs, ~{stats['api_calls']} appels API")
         if stats["years_failed"]:
-            print(f"  ATTENTION: annees en echec pour {tour_key}: {stats['years_failed']} (voir ingest_runs pour le detail)")
+            print(
+                f"  ATTENTION: annees en echec pour {tour_key}: {stats['years_failed']} "
+                "(voir ingest_runs pour le detail)"
+            )
 
 
 if __name__ == "__main__":
