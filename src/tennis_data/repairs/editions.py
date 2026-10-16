@@ -1,5 +1,5 @@
 """
-Reparation 2/3: matchs rattaches a la mauvaise edition (review 3.3).
+Reparation 2/4: matchs rattaches a la mauvaise edition (review 3.3).
 
 La cle d'une edition est {tournament_key}_{saison}, et la saison venait du champ
 tournament_season du fournisseur, pas fiable: ex. 87 matchs de l'US Open 2026 sous le

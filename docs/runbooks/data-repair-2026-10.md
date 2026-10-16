@@ -3,7 +3,7 @@
 Status: **not run.** Running it needs Rafik's explicit go-ahead and a fresh backup.
 
 The P0 code fixes (PR "Foundations 2/4") only affect rows written from now on. This runbook covers
-the rows already in the production database. It uses `scripts/repair_data.py`, which wraps three
+the rows already in the production database. It uses `scripts/repair_data.py`, which wraps four
 repairs from `src/tennis_data/repairs/`:
 
 | # | Repair | Review | What it changes | Idempotent by |
@@ -11,6 +11,7 @@ repairs from `src/tennis_data/repairs/`:
 | 1 | `scheduled-at-utc` | 3.5, [ADR-0003](../adr/0003-utc-timestamps.md) | Every `matches.scheduled_at` written by the old code is reread as Europe/Berlin and converted to UTC (−2 h in summer, −1 h in winter) | an `ingest_runs` marker (a second run is refused) + `last_synced_at` cut-off |
 | 2 | `editions` | 3.3 | Re-attaches matches to the edition of their real season (e.g. 87 Sept-2026 US Open matches from tournament 423 to 2203); relabels or creates editions where needed | nature (a second run finds nothing to move) |
 | 3 | `finals` | 3.4 | Re-labels `F`/`Q-F` everywhere with the rule "the real final is the last match of its edition" | nature |
+| 4 | `qualifying-rounds` | — | Re-labels qualifying matches stored as `QF`/`SF` to `Q-QF`/`Q-SF`: any QF/SF scheduled before the edition's first main-draw R16 (or, with no R16 yet, its first R128/R64/R32) | nature |
 
 Every repair is **dry-run by default**. A dry run uses a `READ ONLY` transaction, so it cannot write.
 With `--apply`, the script works in one transaction:
@@ -23,6 +24,8 @@ has been applied:
 - `editions` reads each match's day in Berlin time, which is only correct after repair 1.
 - `finals` compares each final with the last match of its edition, which is only meaningful
   after repair 2.
+- `qualifying-rounds` compares each QF/SF with the start of its edition's main draw, which also
+  needs repair 2. It runs after `finals` to keep a single linear order (the two rules are independent).
 
 `scripts/fix_qualifying_finals.py` is superseded by repair 3, and it has no dry run.
 
@@ -30,7 +33,7 @@ has been applied:
 
 - [ ] Rafik has said "go" for this run.
 - [ ] PR 2 (code fixes) is merged and deployed, and **ingestion is still paused**. The `daily-sync`,
-  `upcoming-odds` and `rankings` cron jobs stay suspended until step 4.
+  `upcoming-odds` and `rankings` cron jobs stay suspended until step 5.
 - [ ] A backup exists and you know how to restore it:
   - Render dashboard → the Postgres instance → *Backups* / *Recovery*. Check what the current plan
     offers; free instances have no backups.
@@ -113,18 +116,38 @@ Then apply:
 uv run python scripts/repair_data.py finals --apply
 ```
 
-## 4. Verify, then resume
+## 4. Qualifying QF/SF
+
+```bash
+uv run python scripts/repair_data.py qualifying-rounds
+```
+
+What to check in the dry run:
+- About 3,800 `QF/SF -> Q-QF/Q-SF` in about 360 editions, almost all from 2021–2023, and `0` the other
+  way. Measured on the public API on 2026-10-16, before repairs 1–3: 3,810 SF + 626 QF in 359 editions.
+- The top of the list: Grand Slam qualifying (up to 96 per edition: 64 Q1 labeled `QF` + 32 Q2 labeled `SF`)
+  and Challengers with 12 or 8.
+- Tournaments 2203 and 2205 (2026 US Open, frozen before the R16) each have their 2 qualifying `SF` demoted.
+
+Then apply:
+
+```bash
+uv run python scripts/repair_data.py qualifying-rounds --apply
+```
+
+## 5. Verify, then resume
 
 ```bash
 API=https://tennis-data-platform.onrender.com
 curl -s "$API/matches/32529" | grep -o '"scheduled_at":"[^"]*"'           # 2026-07-12T15:10:00Z
 curl -s "$API/matches?tournament_id=423&limit=200" | grep -o '"scheduled_at":"2026-' | wc -l   # 0
 curl -s "$API/matches?tournament_id=2203&round_code=F&limit=1" | grep -o '"total":[0-9]*'   # "total":0
+curl -s "$API/matches?round_code=SF&limit=1" | grep -o '"total":[0-9]*'   # about 2x the F total (was 7,703)
 ```
 
 ```sql
 SELECT job_name, finished_at, rows_updated, error_message
-FROM ingest_runs WHERE job_name LIKE 'repair:%' ORDER BY finished_at;   -- 3 rows
+FROM ingest_runs WHERE job_name LIKE 'repair:%' ORDER BY finished_at;   -- 4 rows
 ```
 
 Only after that, and only if Rafik wants it, resume the cron jobs. They will now run the fixed code.
@@ -136,4 +159,4 @@ Only after that, and only if Rafik wants it, resume the cron jobs. They will now
   `UPDATE matches SET scheduled_at = (scheduled_at AT TIME ZONE 'Europe/Berlin') AT TIME ZONE 'UTC'`,
   restricted to the same rows (`last_synced_at < cutoff`), then delete the `repair:scheduled_at_utc` marker.
   It is exact except for the one ambiguous hour per year when clocks go back.
-- Repairs 2 and 3 have no automatic undo: restore the backup.
+- Repairs 2 to 4 have no automatic undo: restore the backup.
