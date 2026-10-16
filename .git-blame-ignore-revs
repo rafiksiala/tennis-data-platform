@@ -1,0 +1,6 @@
+# Commits purement mecaniques (formatage) a ignorer dans git blame.
+# Active localement avec: git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub les ignore automatiquement. Valable seulement si la PR est fusionnee sans squash.
+
+# Formater le code avec ruff
+3b0a84c8d6b2caf1811f1814954fb60072b5de26
